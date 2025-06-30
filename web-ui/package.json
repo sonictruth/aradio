@@ -4,8 +4,9 @@
   "version": "0.0.0",
   "source": "src/index.html",
   "scripts": {
-    "start": "parcel",
-    "build": "parcel build"
+    "deploy": "npm run build && gh-pages -d dist",
+    "start": "parcel ",
+    "build": "parcel build  --public-url /aradio/  --no-content-hash --no-source-maps src/index.html "
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",
@@ -13,7 +14,6 @@
     "@mui/icons-material": "^7.2.0",
     "@mui/material": "^7.2.0",
     "@mui/styled-engine-sc": "^7.2.0",
-    "radio-browser": "^2.2.3",
     "radio-browser-api": "^6.0.3",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
@@ -25,6 +25,7 @@
     "@types/react-dom": "^19.0.0",
     "buffer": "^6.0.3",
     "events": "^3.3.0",
+    "gh-pages": "^6.3.0",
     "https-browserify": "^1.0.0",
     "parcel": "^2.14.0",
     "parcel-namer-hashless": "^1.0.7",

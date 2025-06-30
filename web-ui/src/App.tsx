@@ -16,7 +16,6 @@ api.setBaseUrl('https://de2.api.radio-browser.info');
 // By Countru
 // By Search box name
 
-
 export function App() {
   const handleChange = () => {};
   useEffect(() => {
