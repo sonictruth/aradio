@@ -1,58 +1,295 @@
+import { useEffect, useState } from 'react';
+import { useDebounce } from '@uidotdev/usehooks';
+import { RadioBrowserApi, StationSearchType, Station } from 'radio-browser-api';
+
 import Button from '@mui/material/Button';
 import Typography from '@mui/material/Typography';
 import Stack from '@mui/material/Stack';
 import Container from '@mui/material/Container';
-import Paper from '@mui/material/Paper';
-import { useEffect } from 'react';
-import { RadioBrowserApi, StationSearchType } from 'radio-browser-api';
+
 import Slider from '@mui/material/Slider';
 import VolumeDown from '@mui/icons-material/VolumeDown';
+
 import VolumeUp from '@mui/icons-material/VolumeUp';
+import HourglassBottomIcon from '@mui/icons-material/HourglassBottom';
+import SearchIcon from '@mui/icons-material/Search';
+
+import FormControl from '@mui/material/FormControl';
+import InputLabel from '@mui/material/InputLabel';
+
+import NativeSelect from '@mui/material/NativeSelect';
+
+import TextField from '@mui/material/TextField';
+
+import Fade from '@mui/material/Fade';
+import IconButton from '@mui/material/IconButton';
+import Snackbar from '@mui/material/Snackbar';
+import Box from '@mui/material/Box';
+
+import { StationBox } from './StationBox';
+
+const localStorageFavouritesKey = 'favourites';
+const uiDebounceTime = 500;
+const radioBrowserBaseUrl = 'https://de1.api.radio-browser.info';
+
+const radioBaseUrl = 'http://aradio.local';
 
 const api = new RadioBrowserApi('ARadio', true);
-api.setBaseUrl('https://de2.api.radio-browser.info');
+api.setBaseUrl(radioBrowserBaseUrl);
 
-// Favouries
-// By Countru
-// By Search box name
+type Country = { name: string; iso_3166_1: string; stationcount: number };
 
 export function App() {
   const handleChange = () => {};
+
+  const [countries, setCountries] = useState<Country[] | null>(null);
+  const [stations, setStations] = useState<Station[] | null>(null);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [isPlaying, setIsPlaying] = useState<boolean>(false);
+  const [currentStationName, setCurrentStationName] = useState<string>('');
+  const [currentStationTitle, setCurrentStationTitle] = useState<string>('');
+  const [cmdIsLoading, setCmdIsLoading] = useState<boolean>(false);
+  const [snackbar, setSnackbar] = useState<{ open: boolean; message: string }>({
+    open: false,
+    message: '',
+  });
+
+  const [searchKeyword, setSearchKeyword] = useState<string>('');
+
+  const [volume, setVolume] = useState<number>(0);
+  const debouncedVolume = useDebounce(volume, uiDebounceTime);
+
+  const playStream = async (url: string) => {
+    setCmdIsLoading(true);
+    try {
+      await fetch(`${radioBaseUrl}/play?url=${encodeURIComponent(url)}`);
+    } catch (error) {
+      setSnackbar({
+        open: true,
+        message: `Error playing {$url}`,
+      });
+    }
+    await updateStatus();
+    setCmdIsLoading(false);
+  };
+
+  const stopStream = async () => {
+    setCmdIsLoading(true);
+    try {
+      await fetch(`${radioBaseUrl}/stop`);
+    } catch (error) {
+      console.error('Error playing stream:', error);
+    }
+    await updateStatus();
+    setCmdIsLoading(false);
+  };
+
+  useEffect(() => {
+    async function setVolumeAsync() {
+      if (debouncedVolume !== 0) {
+        const volumeUrl = `${radioBaseUrl}/setvolume?value=${debouncedVolume}`;
+        setCmdIsLoading(true);
+        try {
+          await fetch(volumeUrl);
+        } catch (error) {
+          console.error('Error setting volume:', error);
+          setSnackbar({
+            open: true,
+            message: `Error setting volume to ${debouncedVolume}`,
+          });
+        }
+        setCmdIsLoading(false);
+      }
+    }
+    setVolumeAsync();
+  }, [debouncedVolume]);
+
+  async function updateStatus() {
+    try {
+      const response = await fetch(`${radioBaseUrl}/status`);
+      const status = (await response.text()).split(',');
+
+      const [isPlayingStatus, volumeStatus, stationName, statonTitle] = status;
+      setIsPlaying(isPlayingStatus === '1');
+      setVolume(parseInt(volumeStatus, 10));
+      setCurrentStationName(stationName);
+      setCurrentStationTitle(statonTitle);
+    } catch (error) {
+      console.warn('Error:', error);
+      setSnackbar({
+        open: true,
+        message: 'Error fetching status',
+      });
+    }
+  }
+
   useEffect(() => {
     async function fetchInitialData() {
+      setCmdIsLoading(true);
       try {
-        // countries / status
-        //const countries = await api.getCountries();
-        //const stations = await api.getStationsBy(StationSearchType.byCountryCodeExact, 'RO');
-        //const stations = await api.getStationsBy(
-        //  StationSearchType.byName,
-        //  'iCat'
-        //);
-        //console.log(stations, countries, api.getBaseUrl());
-        // get status
+        const apiCountries = await api.getCountries();
+        setCountries(apiCountries as Country[]);
       } catch (error) {
         console.warn('Error:', error);
+        setSnackbar({
+          open: true,
+          message: 'Error fetching countries',
+        });
       }
+      await updateStatus();
+      setCmdIsLoading(false);
+      showFavouriteStations();
     }
     fetchInitialData();
   }, []);
-  return (
-      <Container maxWidth='sm'>
-        <Paper
-          elevation={3}
-          sx={{
-            background: { xs: 'none', sm: 'initial' },
-            boxShadow: { xs: 'none', sm: 3 },
-            p: 0,
-          }}
-        >
-        <Stack
-          padding={1} 
-        >
-          <Typography variant='h4' component='h4' >
-            ARadiox
-          </Typography>
 
+  function sortStations(stations: Station[]): Station[] {
+    return stations.sort(
+      (a, b) =>
+        (b.clickCount ?? 0) +
+        (b.votes ?? 0) -
+        ((a.clickCount ?? 0) + (a.votes ?? 0))
+    );
+  }
+
+  async function showStationsByCountry(
+    event: React.ChangeEvent<HTMLSelectElement>
+  ): Promise<void> {
+    setIsLoading(false);
+    setStations(null);
+    const countryCode = event.target.value;
+
+    try {
+      let stationsByCountry = await api.getStationsBy(
+        StationSearchType.byCountryCodeExact,
+        countryCode
+      );
+      stationsByCountry = sortStations(stationsByCountry);
+      setStations(stationsByCountry);
+    } catch (error) {
+      console.warn('Error fetching stations by country:', error);
+      setSnackbar({
+        open: true,
+        message: 'Error fetching stations by country',
+      });
+    }
+    setIsLoading(false);
+  }
+
+  function getFavouritesFromLocalStorage(): Station[] {
+    const favourites = localStorage.getItem(localStorageFavouritesKey);
+    return favourites ? JSON.parse(favourites).reverse() : [];
+  }
+
+  function isFavourite(id: string) {
+    const favourites = getFavouritesFromLocalStorage();
+    return favourites.some((fav: Station) => fav.id === id);
+  }
+
+  function removeFromFavourites(id: string): void {
+    const favourites = getFavouritesFromLocalStorage();
+    const updatedFavourites = favourites.filter(
+      (fav: Station) => fav.id !== id
+    );
+    localStorage.setItem(
+      localStorageFavouritesKey,
+      JSON.stringify(updatedFavourites)
+    );
+
+    setStations((prev) =>
+      prev
+        ? prev.map((station) => (station.id === id ? { ...station } : station))
+        : prev
+    );
+  }
+  function addToFavourites(station: Station): void {
+    const favourites = getFavouritesFromLocalStorage();
+    if (!favourites.some((fav: Station) => fav.id === station.id)) {
+      favourites.push(station);
+      localStorage.setItem(
+        localStorageFavouritesKey,
+        JSON.stringify(favourites)
+      );
+
+      setStations((prev) =>
+        prev ? prev.map((s) => (s.id === station.id ? { ...s } : s)) : prev
+      );
+    }
+  }
+  function showFavouriteStations(): void {
+    const favourites = getFavouritesFromLocalStorage();
+    setStations(favourites);
+  }
+  async function showStationsByName(showStationsByName: string): Promise<void> {
+    if (!showStationsByName || showStationsByName.trim() === '') {
+      setSnackbar({ open: true, message: 'Please enter a search term' });
+      return;
+    }
+
+    if (showStationsByName.length < 3) {
+      setSnackbar({
+        open: true,
+        message: 'Search term must be at least 3 characters long',
+      });
+      return;
+    }
+
+    setIsLoading(true);
+    setStations(null);
+
+    try {
+      let stationsByName = await api.getStationsBy(
+        StationSearchType.byName,
+        showStationsByName
+      );
+      stationsByName = sortStations(stationsByName);
+      setStations(stationsByName);
+    } catch (error) {
+      setSnackbar({
+        open: true,
+        message: 'Error fetching stations by name',
+      });
+      console.warn('Error fetching stations by name:', error);
+    }
+    setIsLoading(false);
+  }
+
+  return (
+    <Container
+      maxWidth='md'
+      sx={{
+        opacity: cmdIsLoading ? 0.5 : 1,
+        pointerEvents: cmdIsLoading ? 'none' : 'auto',
+        transition: 'opacity 0.2s',
+      }}
+    >
+      <Stack>
+
+        <Stack direction='row' spacing={1} justifyContent="space-between" alignItems="center">
+          <Box>
+            <Typography variant='h4' component='h4' sx={{ pt: 2 }}>
+              📻 ARadio
+            </Typography>
+          </Box>
+
+          <Box>
+            <Button
+              variant='contained'
+              color={isPlaying ? 'error' : 'primary'}
+              onClick={stopStream}
+              disabled={cmdIsLoading}
+            >
+              Stop
+            </Button>
+          </Box>
+        </Stack>
+    <Typography
+      variant='subtitle1'
+      sx={{ pt: 2, textAlign: 'center' }}
+    >
+      {isPlaying ? currentStationName + ' ' + currentStationTitle : ''}
+    </Typography>
+        <Stack direction='column' spacing={1}>
           <Stack
             width='100%'
             spacing={2}
@@ -62,19 +299,106 @@ export function App() {
             <VolumeDown />
             <Slider
               aria-label='Volume'
-              value={10}
+              value={volume}
               min={0}
               max={21}
-              onChange={handleChange}
+              onChange={(_, value) =>
+                setVolume(typeof value === 'number' ? value : 0)
+              }
             />
-             <VolumeUp />
+            <VolumeUp />
           </Stack>
-          <Stack direction='row' spacing={1}>
-            <Button variant='contained'>Favourites</Button>
-          </Stack>
+          <FormControl
+            fullWidth
+            sx={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: 1,
+              display: 'flex',
+            }}
+          >
+            <TextField
+              value={searchKeyword}
+              label='Search by name'
+              variant='standard'
+              onChange={(e) => setSearchKeyword(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  showStationsByName(searchKeyword);
+                }
+              }}
+              sx={{ flex: 1 }}
+            />
+            <IconButton onClick={() => showStationsByName(searchKeyword)}>
+              <SearchIcon />
+            </IconButton>
+          </FormControl>
+          <FormControl fullWidth>
+            <InputLabel id='search-by-country'></InputLabel>
+            <NativeSelect
+              defaultValue=''
+              variant='filled'
+              onChange={showStationsByCountry}
+            >
+              <option value='' disabled>
+                Search by Country
+              </option>
+              {countries?.map(
+                (country: {
+                  name: string;
+                  iso_3166_1: string;
+                  stationcount: number;
+                }) => (
+                  <option key={country.iso_3166_1} value={country.iso_3166_1}>
+                    {country.name} ({country.stationcount})
+                  </option>
+                )
+              )}
+            </NativeSelect>
+          </FormControl>
+          <Button onClick={showFavouriteStations} fullWidth variant='outlined'>
+            Favourite Stations
+          </Button>
         </Stack>
-        </Paper>
-      </Container>
+      </Stack>
+      <Stack padding={1}>
+        {!isLoading &&
+          (stations && stations.length > 0 ? (
+            <Stack spacing={1}>
+              {stations.map((station) => (
+                <StationBox
+                  key={station.id}
+                  isFavourite={isFavourite(station.id)}
+                  station={station}
+                  onAddFavorites={addToFavourites}
+                  onRemoveFavourites={removeFromFavourites}
+                  onPlayStreamURL={playStream}
+                />
+              ))}
+            </Stack>
+          ) : (
+            <Typography variant='body2' color='text.secondary'>
+              Nothing stations found.
+            </Typography>
+          ))}
 
+        {isLoading && (
+          <Typography variant='body2' color='text.secondary' align='center'>
+            <Fade in={isLoading} timeout={200}>
+              <span>
+                <HourglassBottomIcon fontSize='small' /> Wait...
+              </span>
+            </Fade>
+          </Typography>
+        )}
+      </Stack>
+
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={4000}
+        onClose={() => setSnackbar({ open: false, message: '' })}
+        message={snackbar.message}
+      />
+    </Container>
   );
 }

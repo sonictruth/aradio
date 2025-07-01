@@ -1,4 +1,10 @@
 body, html {
-  padding: 5px;
+  padding: 0px;
   margin: 0px;
+
+  background-color: aliceblue;
+}
+
+body {
+    overflow-y: scroll;
 }

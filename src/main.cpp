@@ -5,8 +5,12 @@
 #include <Adafruit_SSD1306.h>
 #include <WiFiManager.h>
 #include <ESPmDNS.h>
+#include <EEPROM.h>
 #include "Audio.h"
 #include "webroutes.h"
+#include "epromAddreses.h"
+
+#define EEPROM_SIZE 512
 
 #define SCREEN_WIDTH 128
 #define SCREEN_HEIGHT 32
@@ -28,11 +32,12 @@
 String deviceName = "ARadio";
 String devicePassword = "12345678";
 
-char topStatus[256] = "-";
-char bottomStatus[256] = "-";
+char topStatus[256] = "";
+char bottomStatus[256] = "";
 
-char stationName[256] = "-";
-char stationTitle[256] = "-";
+char stationName[256] = "";
+char stationTitle[256] = "";
+char lastStreamURL[256] = "";
 
 String webURL = "";
 
@@ -54,11 +59,14 @@ void setupDisplay()
   if (!display.begin(SSD1306_SWITCHCAPVCC, SCREEN_ADDRESS))
   {
     Serial.println(F("SSD1306 allocation failed"));
-    for (;;)
+    delay(100000);
+    ESP.restart();
   }
   display.setTextColor(SSD1306_WHITE);
   display.ssd1306_command(SSD1306_SETCONTRAST);
   display.ssd1306_command(0x01);
+  topStatusTextX = SCREEN_WIDTH;
+  bottomStatusTextX = SCREEN_WIDTH;
 }
 
 void showText(const String &status)
@@ -153,7 +161,7 @@ void setupWifi()
 
 void setup()
 {
-  delay(1000);
+
   Serial.begin(115200);
   Serial.println("Starting...");
   Serial.print("Total PSRAM: ");
@@ -162,8 +170,22 @@ void setup()
   setupDisplay();
 
   audio.setPinout(I2S_BCLK, I2S_LRC, I2S_DOUT);
-  audio.setVolume(12);
+
   setupWifi();
+
+  EEPROM.begin(EEPROM_SIZE);
+
+  int volume = EEPROM.readInt(VOLUME_EPROM_ADDRESS);
+  Serial.print("Volume from EEPROM: ");
+  Serial.println(volume);
+  if (volume > 0 && volume <= 21)
+  {
+    audio.setVolume(volume);
+  }
+  else
+  {
+    audio.setVolume(12);
+  }
 
   String hostName = WiFi.localIP().toString();
 
@@ -175,9 +197,20 @@ void setup()
 
   webURL = "http://" + hostName;
 
-  audio.connecttospeech("Hello, this is a test speech", "en");
 
- // audio.connecttohost("http://mp3.ffh.de/radioffh/hqlivestream.mp3");
+  EEPROM.readString(0, lastStreamURL, sizeof(lastStreamURL));
+
+  if (strlen(lastStreamURL) > 0)
+  {
+    Serial.println("Resuming last stream: " + String(lastStreamURL));
+    audio.connecttohost(lastStreamURL);
+    setStatus("Resuming: " + String(lastStreamURL), true);
+  }
+  else
+  {
+    setStatus("No previous stream found", true);
+    setStatus("Connect to " + webURL, false);
+  }
 }
 
 void scrollText()
@@ -213,7 +246,7 @@ void loop()
 {
   vTaskDelay(1);
   audio.loop();
-  
+
   static unsigned long lastScroll = 0;
   if (millis() - lastScroll >= 500)
   {
@@ -228,7 +261,7 @@ void audio_info(const char *info)
   Serial.println(info);
 }
 void audio_id3data(const char *info)
-{ 
+{
   Serial.print("id3data     ");
   Serial.println(info);
 }
