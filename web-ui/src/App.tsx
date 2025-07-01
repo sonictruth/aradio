@@ -32,7 +32,12 @@ const localStorageFavouritesKey = 'favourites';
 const uiDebounceTime = 500;
 const radioBrowserBaseUrl = 'https://de1.api.radio-browser.info';
 
-const radioBaseUrl = 'http://aradio.local';
+let radioBaseUrl: string;
+if (process.env.NODE_ENV === 'production') {
+  radioBaseUrl = '';
+} else {
+  radioBaseUrl = 'http://aradio.local';
+}
 
 const api = new RadioBrowserApi('ARadio', true);
 api.setBaseUrl(radioBrowserBaseUrl);
@@ -264,8 +269,12 @@ export function App() {
       }}
     >
       <Stack>
-
-        <Stack direction='row' spacing={1} justifyContent="space-between" alignItems="center">
+        <Stack
+          direction='row'
+          spacing={1}
+          justifyContent='space-between'
+          alignItems='center'
+        >
           <Box>
             <Typography variant='h4' component='h4' sx={{ pt: 2 }}>
               📻 ARadio
@@ -283,12 +292,9 @@ export function App() {
             </Button>
           </Box>
         </Stack>
-    <Typography
-      variant='subtitle1'
-      sx={{ pt: 2, textAlign: 'center' }}
-    >
-      {isPlaying ? currentStationName + ' ' + currentStationTitle : ''}
-    </Typography>
+        <Typography variant='subtitle1' sx={{ pt: 2, textAlign: 'center' }}>
+          {isPlaying ? currentStationName + ' ' + currentStationTitle : ''}
+        </Typography>
         <Stack direction='column' spacing={1}>
           <Stack
             width='100%'
