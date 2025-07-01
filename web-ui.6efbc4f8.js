@@ -16140,12 +16140,15 @@ var _iconButton = require("@mui/material/IconButton");
 var _iconButtonDefault = parcelHelpers.interopDefault(_iconButton);
 var _snackbar = require("@mui/material/Snackbar");
 var _snackbarDefault = parcelHelpers.interopDefault(_snackbar);
+var _box = require("@mui/material/Box");
+var _boxDefault = parcelHelpers.interopDefault(_box);
 var _stationBox = require("./StationBox");
 var _s = $RefreshSig$();
 const localStorageFavouritesKey = 'favourites';
 const uiDebounceTime = 500;
 const radioBrowserBaseUrl = 'https://de1.api.radio-browser.info';
-const radioBaseUrl = 'http://aradio.local';
+let radioBaseUrl;
+radioBaseUrl = 'http://aradio.local';
 const api = new (0, _radioBrowserApi.RadioBrowserApi)('ARadio', true);
 api.setBaseUrl(radioBrowserBaseUrl);
 function App() {
@@ -16154,6 +16157,9 @@ function App() {
     const [countries, setCountries] = (0, _react.useState)(null);
     const [stations, setStations] = (0, _react.useState)(null);
     const [isLoading, setIsLoading] = (0, _react.useState)(false);
+    const [isPlaying, setIsPlaying] = (0, _react.useState)(false);
+    const [currentStationName, setCurrentStationName] = (0, _react.useState)('');
+    const [currentStationTitle, setCurrentStationTitle] = (0, _react.useState)('');
     const [cmdIsLoading, setCmdIsLoading] = (0, _react.useState)(false);
     const [snackbar, setSnackbar] = (0, _react.useState)({
         open: false,
@@ -16172,6 +16178,7 @@ function App() {
                 message: `Error playing {$url}`
             });
         }
+        await updateStatus();
         setCmdIsLoading(false);
     };
     const stopStream = async ()=>{
@@ -16181,12 +16188,13 @@ function App() {
         } catch (error) {
             console.error('Error playing stream:', error);
         }
+        await updateStatus();
         setCmdIsLoading(false);
     };
     (0, _react.useEffect)(()=>{
         async function setVolumeAsync() {
             if (debouncedVolume !== 0) {
-                const volumeUrl = `${radioBaseUrl}/volume?level=${debouncedVolume}`;
+                const volumeUrl = `${radioBaseUrl}/setvolume?value=${debouncedVolume}`;
                 setCmdIsLoading(true);
                 try {
                     await fetch(volumeUrl);
@@ -16204,6 +16212,23 @@ function App() {
     }, [
         debouncedVolume
     ]);
+    async function updateStatus() {
+        try {
+            const response = await fetch(`${radioBaseUrl}/status`);
+            const status = (await response.text()).split(',');
+            const [isPlayingStatus, volumeStatus, stationName, statonTitle] = status;
+            setIsPlaying(isPlayingStatus === '1');
+            setVolume(parseInt(volumeStatus, 10));
+            setCurrentStationName(stationName);
+            setCurrentStationTitle(statonTitle);
+        } catch (error) {
+            console.warn('Error:', error);
+            setSnackbar({
+                open: true,
+                message: 'Error fetching status'
+            });
+        }
+    }
     (0, _react.useEffect)(()=>{
         async function fetchInitialData() {
             setCmdIsLoading(true);
@@ -16217,15 +16242,7 @@ function App() {
                     message: 'Error fetching countries'
                 });
             }
-            try {
-                await fetch(`${radioBaseUrl}/status`);
-            } catch (error) {
-                console.warn('Error:', error);
-                setSnackbar({
-                    open: true,
-                    message: 'Error fetching status'
-                });
-            }
+            await updateStatus();
             setCmdIsLoading(false);
             showFavouriteStations();
         }
@@ -16321,16 +16338,63 @@ function App() {
         children: [
             /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)((0, _stackDefault.default), {
                 children: [
+                    /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)((0, _stackDefault.default), {
+                        direction: "row",
+                        spacing: 1,
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                        children: [
+                            /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)((0, _boxDefault.default), {
+                                children: /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)((0, _typographyDefault.default), {
+                                    variant: "h4",
+                                    component: "h4",
+                                    sx: {
+                                        pt: 2
+                                    },
+                                    children: "\uD83D\uDCFB ARadio"
+                                }, void 0, false, {
+                                    fileName: "src/App.tsx",
+                                    lineNumber: 279,
+                                    columnNumber: 13
+                                }, this)
+                            }, void 0, false, {
+                                fileName: "src/App.tsx",
+                                lineNumber: 278,
+                                columnNumber: 11
+                            }, this),
+                            /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)((0, _boxDefault.default), {
+                                children: /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)((0, _buttonDefault.default), {
+                                    variant: "contained",
+                                    color: isPlaying ? 'error' : 'primary',
+                                    onClick: stopStream,
+                                    disabled: cmdIsLoading,
+                                    children: "Stop"
+                                }, void 0, false, {
+                                    fileName: "src/App.tsx",
+                                    lineNumber: 285,
+                                    columnNumber: 13
+                                }, this)
+                            }, void 0, false, {
+                                fileName: "src/App.tsx",
+                                lineNumber: 284,
+                                columnNumber: 11
+                            }, this)
+                        ]
+                    }, void 0, true, {
+                        fileName: "src/App.tsx",
+                        lineNumber: 272,
+                        columnNumber: 9
+                    }, this),
                     /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)((0, _typographyDefault.default), {
-                        variant: "h4",
-                        component: "h4",
+                        variant: "subtitle1",
                         sx: {
-                            pt: 2
+                            pt: 2,
+                            textAlign: 'center'
                         },
-                        children: "\uD83D\uDCFB ARadio"
+                        children: isPlaying ? currentStationName + ' ' + currentStationTitle : ''
                     }, void 0, false, {
                         fileName: "src/App.tsx",
-                        lineNumber: 251,
+                        lineNumber: 295,
                         columnNumber: 9
                     }, this),
                     /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)((0, _stackDefault.default), {
@@ -16348,7 +16412,7 @@ function App() {
                                 children: [
                                     /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)((0, _volumeDownDefault.default), {}, void 0, false, {
                                         fileName: "src/App.tsx",
-                                        lineNumber: 262,
+                                        lineNumber: 305,
                                         columnNumber: 13
                                     }, this),
                                     /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)((0, _sliderDefault.default), {
@@ -16359,18 +16423,18 @@ function App() {
                                         onChange: (_, value)=>setVolume(typeof value === 'number' ? value : 0)
                                     }, void 0, false, {
                                         fileName: "src/App.tsx",
-                                        lineNumber: 263,
+                                        lineNumber: 306,
                                         columnNumber: 13
                                     }, this),
                                     /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)((0, _volumeUpDefault.default), {}, void 0, false, {
                                         fileName: "src/App.tsx",
-                                        lineNumber: 272,
+                                        lineNumber: 315,
                                         columnNumber: 13
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "src/App.tsx",
-                                lineNumber: 256,
+                                lineNumber: 299,
                                 columnNumber: 11
                             }, this),
                             /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)((0, _formControlDefault.default), {
@@ -16395,25 +16459,25 @@ function App() {
                                         }
                                     }, void 0, false, {
                                         fileName: "src/App.tsx",
-                                        lineNumber: 283,
+                                        lineNumber: 326,
                                         columnNumber: 13
                                     }, this),
                                     /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)((0, _iconButtonDefault.default), {
                                         onClick: ()=>showStationsByName(searchKeyword),
                                         children: /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)((0, _searchDefault.default), {}, void 0, false, {
                                             fileName: "src/App.tsx",
-                                            lineNumber: 296,
+                                            lineNumber: 339,
                                             columnNumber: 15
                                         }, this)
                                     }, void 0, false, {
                                         fileName: "src/App.tsx",
-                                        lineNumber: 295,
+                                        lineNumber: 338,
                                         columnNumber: 13
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "src/App.tsx",
-                                lineNumber: 274,
+                                lineNumber: 317,
                                 columnNumber: 11
                             }, this),
                             /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)((0, _formControlDefault.default), {
@@ -16423,7 +16487,7 @@ function App() {
                                         id: "search-by-country"
                                     }, void 0, false, {
                                         fileName: "src/App.tsx",
-                                        lineNumber: 300,
+                                        lineNumber: 343,
                                         columnNumber: 13
                                     }, this),
                                     /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)((0, _nativeSelectDefault.default), {
@@ -16437,7 +16501,7 @@ function App() {
                                                 children: "Search by Country"
                                             }, void 0, false, {
                                                 fileName: "src/App.tsx",
-                                                lineNumber: 306,
+                                                lineNumber: 349,
                                                 columnNumber: 15
                                             }, this),
                                             countries?.map((country)=>/*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("option", {
@@ -16450,19 +16514,19 @@ function App() {
                                                     ]
                                                 }, country.iso_3166_1, true, {
                                                     fileName: "src/App.tsx",
-                                                    lineNumber: 315,
+                                                    lineNumber: 358,
                                                     columnNumber: 19
                                                 }, this))
                                         ]
                                     }, void 0, true, {
                                         fileName: "src/App.tsx",
-                                        lineNumber: 301,
+                                        lineNumber: 344,
                                         columnNumber: 13
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "src/App.tsx",
-                                lineNumber: 299,
+                                lineNumber: 342,
                                 columnNumber: 11
                             }, this),
                             /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)((0, _buttonDefault.default), {
@@ -16472,19 +16536,19 @@ function App() {
                                 children: "Favourite Stations"
                             }, void 0, false, {
                                 fileName: "src/App.tsx",
-                                lineNumber: 322,
+                                lineNumber: 365,
                                 columnNumber: 11
                             }, this)
                         ]
                     }, void 0, true, {
                         fileName: "src/App.tsx",
-                        lineNumber: 255,
+                        lineNumber: 298,
                         columnNumber: 9
                     }, this)
                 ]
             }, void 0, true, {
                 fileName: "src/App.tsx",
-                lineNumber: 250,
+                lineNumber: 271,
                 columnNumber: 7
             }, this),
             /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)((0, _stackDefault.default), {
@@ -16500,12 +16564,12 @@ function App() {
                                 onPlayStreamURL: playStream
                             }, station.id, false, {
                                 fileName: "src/App.tsx",
-                                lineNumber: 332,
+                                lineNumber: 375,
                                 columnNumber: 17
                             }, this))
                     }, void 0, false, {
                         fileName: "src/App.tsx",
-                        lineNumber: 330,
+                        lineNumber: 373,
                         columnNumber: 13
                     }, this) : /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)((0, _typographyDefault.default), {
                         variant: "body2",
@@ -16513,7 +16577,7 @@ function App() {
                         children: "Nothing stations found."
                     }, void 0, false, {
                         fileName: "src/App.tsx",
-                        lineNumber: 343,
+                        lineNumber: 386,
                         columnNumber: 13
                     }, this)),
                     isLoading && /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)((0, _typographyDefault.default), {
@@ -16529,30 +16593,30 @@ function App() {
                                         fontSize: "small"
                                     }, void 0, false, {
                                         fileName: "src/App.tsx",
-                                        lineNumber: 352,
+                                        lineNumber: 395,
                                         columnNumber: 17
                                     }, this),
                                     " Wait..."
                                 ]
                             }, void 0, true, {
                                 fileName: "src/App.tsx",
-                                lineNumber: 351,
+                                lineNumber: 394,
                                 columnNumber: 15
                             }, this)
                         }, void 0, false, {
                             fileName: "src/App.tsx",
-                            lineNumber: 350,
+                            lineNumber: 393,
                             columnNumber: 13
                         }, this)
                     }, void 0, false, {
                         fileName: "src/App.tsx",
-                        lineNumber: 349,
+                        lineNumber: 392,
                         columnNumber: 11
                     }, this)
                 ]
             }, void 0, true, {
                 fileName: "src/App.tsx",
-                lineNumber: 327,
+                lineNumber: 370,
                 columnNumber: 7
             }, this),
             /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)((0, _snackbarDefault.default), {
@@ -16565,17 +16629,17 @@ function App() {
                 message: snackbar.message
             }, void 0, false, {
                 fileName: "src/App.tsx",
-                lineNumber: 359,
+                lineNumber: 402,
                 columnNumber: 7
             }, this)
         ]
     }, void 0, true, {
         fileName: "src/App.tsx",
-        lineNumber: 242,
+        lineNumber: 263,
         columnNumber: 5
     }, this);
 }
-_s(App, "l2R5ffI+STqrSVIBNCjN+HAOleM=", false, function() {
+_s(App, "90n8Ddg650lRSY0E+0Tmd+Z5Fr0=", false, function() {
     return [
         (0, _usehooks.useDebounce)
     ];
@@ -16589,7 +16653,7 @@ $RefreshReg$(_c, "App");
   globalThis.$RefreshReg$ = prevRefreshReg;
   globalThis.$RefreshSig$ = prevRefreshSig;
 }
-},{"react/jsx-dev-runtime":"dVPUn","react":"jMk1U","@uidotdev/usehooks":"2Zosn","radio-browser-api":"h9Iku","@mui/material/Button":"3UElZ","@mui/material/Typography":"kngBC","@mui/material/Stack":"burwL","@mui/material/Container":"fQwTe","@mui/material/Slider":"edTJq","@mui/icons-material/VolumeDown":"hT1bs","@mui/icons-material/VolumeUp":"hMKwA","@mui/icons-material/HourglassBottom":"3EFXm","@mui/icons-material/Search":"dDwAO","@mui/material/FormControl":"kXCHx","@mui/material/InputLabel":"sCB4J","@mui/material/NativeSelect":"5w1Ux","@mui/material/TextField":"lBe3M","@mui/material/Fade":"czGth","@mui/material/IconButton":"kHx2h","@mui/material/Snackbar":"8B51E","./StationBox":"kZoqH","@parcel/transformer-js/src/esmodule-helpers.js":"jnFvT","@parcel/transformer-react-refresh-wrap/lib/helpers/helpers.js":"7h6Pi"}],"2Zosn":[function(require,module,exports,__globalThis) {
+},{"react/jsx-dev-runtime":"dVPUn","react":"jMk1U","@uidotdev/usehooks":"2Zosn","radio-browser-api":"h9Iku","@mui/material/Button":"3UElZ","@mui/material/Typography":"kngBC","@mui/material/Stack":"burwL","@mui/material/Container":"fQwTe","@mui/material/Slider":"edTJq","@mui/icons-material/VolumeDown":"hT1bs","@mui/icons-material/VolumeUp":"hMKwA","@mui/icons-material/HourglassBottom":"3EFXm","@mui/icons-material/Search":"dDwAO","@mui/material/FormControl":"kXCHx","@mui/material/InputLabel":"sCB4J","@mui/material/NativeSelect":"5w1Ux","@mui/material/TextField":"lBe3M","@mui/material/Fade":"czGth","@mui/material/IconButton":"kHx2h","@mui/material/Snackbar":"8B51E","./StationBox":"kZoqH","@parcel/transformer-js/src/esmodule-helpers.js":"jnFvT","@parcel/transformer-react-refresh-wrap/lib/helpers/helpers.js":"7h6Pi","@mui/material/Box":"e3oPm"}],"2Zosn":[function(require,module,exports,__globalThis) {
 var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
 parcelHelpers.defineInteropFlag(exports);
 parcelHelpers.export(exports, "useBattery", ()=>useBattery);
@@ -56629,7 +56693,1164 @@ function $da9882e673ac146b$var$ErrorOverlay() {
     return null;
 }
 
-},{"@parcel/transformer-js/src/esmodule-helpers.js":"jnFvT"}],"2Oxyk":[function(require,module,exports,__globalThis) {
+},{"@parcel/transformer-js/src/esmodule-helpers.js":"jnFvT"}],"e3oPm":[function(require,module,exports,__globalThis) {
+"use strict";
+var _interopRequireWildcard = require("362fd5837bc2032d").default;
+var _interopRequireDefault = require("efb845652a1d93a0").default;
+Object.defineProperty(exports, "__esModule", {
+    value: true
+});
+var _exportNames = {
+    boxClasses: true
+};
+Object.defineProperty(exports, "boxClasses", {
+    enumerable: true,
+    get: function() {
+        return _boxClasses.default;
+    }
+});
+Object.defineProperty(exports, "default", {
+    enumerable: true,
+    get: function() {
+        return _Box.default;
+    }
+});
+var _Box = _interopRequireDefault(require("5bd40ef5d30f6fa4"));
+var _boxClasses = _interopRequireWildcard(require("b5d4fb018c9241bc"));
+Object.keys(_boxClasses).forEach(function(key) {
+    if (key === "default" || key === "__esModule") return;
+    if (Object.prototype.hasOwnProperty.call(_exportNames, key)) return;
+    if (key in exports && exports[key] === _boxClasses[key]) return;
+    Object.defineProperty(exports, key, {
+        enumerable: true,
+        get: function() {
+            return _boxClasses[key];
+        }
+    });
+});
+
+},{"362fd5837bc2032d":"6TFJp","efb845652a1d93a0":"1P3rZ","5bd40ef5d30f6fa4":"bq3WB","b5d4fb018c9241bc":"5EcK1"}],"bq3WB":[function(require,module,exports,__globalThis) {
+"use strict";
+'use client';
+var _interopRequireDefault = require("7d91b9858dccca1c").default;
+Object.defineProperty(exports, "__esModule", {
+    value: true
+});
+exports.default = void 0;
+var _system = require("fa9ec836b4d11154");
+var _propTypes = _interopRequireDefault(require("f5aaa6dfc01dd19a"));
+var _className = require("9525645ce7d4dc93");
+var _styles = require("f099e4ed28ae6621");
+var _identifier = _interopRequireDefault(require("decfd808fcf56b4"));
+var _boxClasses = _interopRequireDefault(require("ddb4349ba28de6a8"));
+const defaultTheme = (0, _styles.createTheme)();
+const Box = (0, _system.createBox)({
+    themeId: _identifier.default,
+    defaultTheme,
+    defaultClassName: _boxClasses.default.root,
+    generateClassName: _className.unstable_ClassNameGenerator.generate
+});
+Box.propTypes = {
+    // ┌────────────────────────────── Warning ──────────────────────────────┐
+    // │ These PropTypes are generated from the TypeScript type definitions. │
+    // │    To update them, edit the d.ts file and run `pnpm proptypes`.     │
+    // └─────────────────────────────────────────────────────────────────────┘
+    /**
+   * @ignore
+   */ children: _propTypes.default.node,
+    /**
+   * The component used for the root node.
+   * Either a string to use a HTML element or a component.
+   */ component: _propTypes.default.elementType,
+    /**
+   * The system prop that allows defining system overrides as well as additional CSS styles.
+   */ sx: _propTypes.default.oneOfType([
+        _propTypes.default.arrayOf(_propTypes.default.oneOfType([
+            _propTypes.default.func,
+            _propTypes.default.object,
+            _propTypes.default.bool
+        ])),
+        _propTypes.default.func,
+        _propTypes.default.object
+    ])
+};
+var _default = exports.default = Box;
+
+},{"7d91b9858dccca1c":"1P3rZ","fa9ec836b4d11154":"1WaIj","f5aaa6dfc01dd19a":"GNqOQ","9525645ce7d4dc93":"5Fo8W","f099e4ed28ae6621":"7eExx","decfd808fcf56b4":"6SSma","ddb4349ba28de6a8":"5EcK1"}],"5Fo8W":[function(require,module,exports,__globalThis) {
+"use strict";
+var _interopRequireDefault = require("6ce8dcb18b732f2").default;
+Object.defineProperty(exports, "__esModule", {
+    value: true
+});
+Object.defineProperty(exports, "unstable_ClassNameGenerator", {
+    enumerable: true,
+    get: function() {
+        return _ClassNameGenerator.default;
+    }
+});
+var _ClassNameGenerator = _interopRequireDefault(require("68a60cb1c697642c"));
+
+},{"6ce8dcb18b732f2":"1P3rZ","68a60cb1c697642c":"16RUE"}],"7eExx":[function(require,module,exports,__globalThis) {
+"use strict";
+var _interopRequireWildcard = require("9e0b4dc971269a3").default;
+var _interopRequireDefault = require("2d7e4e1648158fbb").default;
+Object.defineProperty(exports, "__esModule", {
+    value: true
+});
+var _exportNames = {
+    experimental_sx: true,
+    THEME_ID: true,
+    adaptV4Theme: true,
+    hexToRgb: true,
+    rgbToHex: true,
+    hslToRgb: true,
+    decomposeColor: true,
+    recomposeColor: true,
+    getContrastRatio: true,
+    getLuminance: true,
+    emphasize: true,
+    alpha: true,
+    darken: true,
+    lighten: true,
+    css: true,
+    keyframes: true,
+    StyledEngineProvider: true,
+    unstable_createBreakpoints: true,
+    createTheme: true,
+    unstable_createMuiStrictModeTheme: true,
+    createStyles: true,
+    unstable_getUnit: true,
+    unstable_toUnitless: true,
+    responsiveFontSizes: true,
+    createTransitions: true,
+    duration: true,
+    easing: true,
+    createColorScheme: true,
+    useTheme: true,
+    useThemeProps: true,
+    styled: true,
+    ThemeProvider: true,
+    makeStyles: true,
+    withStyles: true,
+    withTheme: true,
+    extendTheme: true,
+    experimental_extendTheme: true,
+    getOverlayAlpha: true,
+    shouldSkipGeneratingVar: true,
+    private_createTypography: true,
+    private_createMixins: true,
+    private_excludeVariablesFromRoot: true
+};
+Object.defineProperty(exports, "StyledEngineProvider", {
+    enumerable: true,
+    get: function() {
+        return _system.StyledEngineProvider;
+    }
+});
+Object.defineProperty(exports, "THEME_ID", {
+    enumerable: true,
+    get: function() {
+        return _identifier.default;
+    }
+});
+Object.defineProperty(exports, "ThemeProvider", {
+    enumerable: true,
+    get: function() {
+        return _ThemeProvider.default;
+    }
+});
+Object.defineProperty(exports, "adaptV4Theme", {
+    enumerable: true,
+    get: function() {
+        return _adaptV4Theme.default;
+    }
+});
+Object.defineProperty(exports, "alpha", {
+    enumerable: true,
+    get: function() {
+        return _system.alpha;
+    }
+});
+Object.defineProperty(exports, "createColorScheme", {
+    enumerable: true,
+    get: function() {
+        return _createColorScheme.default;
+    }
+});
+Object.defineProperty(exports, "createStyles", {
+    enumerable: true,
+    get: function() {
+        return _createStyles.default;
+    }
+});
+Object.defineProperty(exports, "createTheme", {
+    enumerable: true,
+    get: function() {
+        return _createTheme.default;
+    }
+});
+Object.defineProperty(exports, "createTransitions", {
+    enumerable: true,
+    get: function() {
+        return _createTransitions.default;
+    }
+});
+Object.defineProperty(exports, "css", {
+    enumerable: true,
+    get: function() {
+        return _system.css;
+    }
+});
+Object.defineProperty(exports, "darken", {
+    enumerable: true,
+    get: function() {
+        return _system.darken;
+    }
+});
+Object.defineProperty(exports, "decomposeColor", {
+    enumerable: true,
+    get: function() {
+        return _system.decomposeColor;
+    }
+});
+Object.defineProperty(exports, "duration", {
+    enumerable: true,
+    get: function() {
+        return _createTransitions.duration;
+    }
+});
+Object.defineProperty(exports, "easing", {
+    enumerable: true,
+    get: function() {
+        return _createTransitions.easing;
+    }
+});
+Object.defineProperty(exports, "emphasize", {
+    enumerable: true,
+    get: function() {
+        return _system.emphasize;
+    }
+});
+Object.defineProperty(exports, "experimental_extendTheme", {
+    enumerable: true,
+    get: function() {
+        return _experimental_extendTheme.default;
+    }
+});
+exports.experimental_sx = experimental_sx;
+Object.defineProperty(exports, "extendTheme", {
+    enumerable: true,
+    get: function() {
+        return _createThemeWithVars.default;
+    }
+});
+Object.defineProperty(exports, "getContrastRatio", {
+    enumerable: true,
+    get: function() {
+        return _system.getContrastRatio;
+    }
+});
+Object.defineProperty(exports, "getLuminance", {
+    enumerable: true,
+    get: function() {
+        return _system.getLuminance;
+    }
+});
+Object.defineProperty(exports, "getOverlayAlpha", {
+    enumerable: true,
+    get: function() {
+        return _getOverlayAlpha.default;
+    }
+});
+Object.defineProperty(exports, "hexToRgb", {
+    enumerable: true,
+    get: function() {
+        return _system.hexToRgb;
+    }
+});
+Object.defineProperty(exports, "hslToRgb", {
+    enumerable: true,
+    get: function() {
+        return _system.hslToRgb;
+    }
+});
+Object.defineProperty(exports, "keyframes", {
+    enumerable: true,
+    get: function() {
+        return _system.keyframes;
+    }
+});
+Object.defineProperty(exports, "lighten", {
+    enumerable: true,
+    get: function() {
+        return _system.lighten;
+    }
+});
+Object.defineProperty(exports, "makeStyles", {
+    enumerable: true,
+    get: function() {
+        return _makeStyles.default;
+    }
+});
+Object.defineProperty(exports, "private_createMixins", {
+    enumerable: true,
+    get: function() {
+        return _createMixins.default;
+    }
+});
+Object.defineProperty(exports, "private_createTypography", {
+    enumerable: true,
+    get: function() {
+        return _createTypography.default;
+    }
+});
+Object.defineProperty(exports, "private_excludeVariablesFromRoot", {
+    enumerable: true,
+    get: function() {
+        return _excludeVariablesFromRoot.default;
+    }
+});
+Object.defineProperty(exports, "recomposeColor", {
+    enumerable: true,
+    get: function() {
+        return _system.recomposeColor;
+    }
+});
+Object.defineProperty(exports, "responsiveFontSizes", {
+    enumerable: true,
+    get: function() {
+        return _responsiveFontSizes.default;
+    }
+});
+Object.defineProperty(exports, "rgbToHex", {
+    enumerable: true,
+    get: function() {
+        return _system.rgbToHex;
+    }
+});
+Object.defineProperty(exports, "shouldSkipGeneratingVar", {
+    enumerable: true,
+    get: function() {
+        return _shouldSkipGeneratingVar.default;
+    }
+});
+Object.defineProperty(exports, "styled", {
+    enumerable: true,
+    get: function() {
+        return _styled.default;
+    }
+});
+Object.defineProperty(exports, "unstable_createBreakpoints", {
+    enumerable: true,
+    get: function() {
+        return _createBreakpoints.unstable_createBreakpoints;
+    }
+});
+Object.defineProperty(exports, "unstable_createMuiStrictModeTheme", {
+    enumerable: true,
+    get: function() {
+        return _createMuiStrictModeTheme.default;
+    }
+});
+Object.defineProperty(exports, "unstable_getUnit", {
+    enumerable: true,
+    get: function() {
+        return _cssUtils.getUnit;
+    }
+});
+Object.defineProperty(exports, "unstable_toUnitless", {
+    enumerable: true,
+    get: function() {
+        return _cssUtils.toUnitless;
+    }
+});
+Object.defineProperty(exports, "useTheme", {
+    enumerable: true,
+    get: function() {
+        return _useTheme.default;
+    }
+});
+Object.defineProperty(exports, "useThemeProps", {
+    enumerable: true,
+    get: function() {
+        return _useThemeProps.default;
+    }
+});
+Object.defineProperty(exports, "withStyles", {
+    enumerable: true,
+    get: function() {
+        return _withStyles.default;
+    }
+});
+Object.defineProperty(exports, "withTheme", {
+    enumerable: true,
+    get: function() {
+        return _withTheme.default;
+    }
+});
+var _formatMuiErrorMessage = _interopRequireDefault(require("1426be4a4155a7db"));
+var _identifier = _interopRequireDefault(require("60e446a07e752fc1"));
+var _adaptV4Theme = _interopRequireDefault(require("4e01c7764d7ad72b"));
+var _system = require("50a86352ec4c604d");
+var _createBreakpoints = require("fc745d3a8e6128b6");
+var _createTheme = _interopRequireDefault(require("c02345c0d2fe9c26"));
+var _createMuiStrictModeTheme = _interopRequireDefault(require("325a3b3f8eefd8c8"));
+var _createStyles = _interopRequireDefault(require("bf76f6a96f96ef46"));
+var _cssUtils = require("d74cc28e333acb9c");
+var _responsiveFontSizes = _interopRequireDefault(require("996875b8cae62043"));
+var _createTransitions = _interopRequireWildcard(require("c5eb00d594046f72"));
+var _createColorScheme = _interopRequireDefault(require("4050e24442ae9870"));
+var _useTheme = _interopRequireDefault(require("be60b7a50df0d204"));
+var _useThemeProps = _interopRequireDefault(require("9ef0b9dc8ad1fc2a"));
+var _styled = _interopRequireDefault(require("7525de448df38c88"));
+var _ThemeProvider = _interopRequireDefault(require("755dbd5cca9108e5"));
+var _makeStyles = _interopRequireDefault(require("4ca70a1175195400"));
+var _withStyles = _interopRequireDefault(require("6a3fda33b23d335a"));
+var _withTheme = _interopRequireDefault(require("de95f5b02dd259e3"));
+var _ThemeProviderWithVars = require("597fd1722bc1e31a");
+Object.keys(_ThemeProviderWithVars).forEach(function(key) {
+    if (key === "default" || key === "__esModule") return;
+    if (Object.prototype.hasOwnProperty.call(_exportNames, key)) return;
+    if (key in exports && exports[key] === _ThemeProviderWithVars[key]) return;
+    Object.defineProperty(exports, key, {
+        enumerable: true,
+        get: function() {
+            return _ThemeProviderWithVars[key];
+        }
+    });
+});
+var _createThemeWithVars = _interopRequireDefault(require("c58e64473d69acc5"));
+var _experimental_extendTheme = _interopRequireDefault(require("7b6ebb63ac28ee0a"));
+var _getOverlayAlpha = _interopRequireDefault(require("24dd3ab8b230fd52"));
+var _shouldSkipGeneratingVar = _interopRequireDefault(require("9ccd3464d7f82d2f"));
+var _createTypography = _interopRequireDefault(require("1935a726b59862c"));
+var _createMixins = _interopRequireDefault(require("1388ea8ab0baac7a"));
+var _excludeVariablesFromRoot = _interopRequireDefault(require("37713734b0c1956"));
+// TODO: Remove this function in v6.
+// eslint-disable-next-line @typescript-eslint/naming-convention
+function experimental_sx() {
+    throw new Error("MUI: The `experimental_sx` has been moved to `theme.unstable_sx`.For more details, see https://github.com/mui/material-ui/pull/35150.");
+} // The legacy utilities from @mui/styles
+ // These are just empty functions that throws when invoked
+ // TODO: Remove in v7
+ // Private methods for creating parts of the theme
+
+},{"9e0b4dc971269a3":"6TFJp","2d7e4e1648158fbb":"1P3rZ","1426be4a4155a7db":"cXsuk","60e446a07e752fc1":"6SSma","4e01c7764d7ad72b":"8FKfg","50a86352ec4c604d":"1WaIj","fc745d3a8e6128b6":"9ZDyZ","c02345c0d2fe9c26":"a1TKj","325a3b3f8eefd8c8":"8fLO4","bf76f6a96f96ef46":"e3r46","d74cc28e333acb9c":"btihx","996875b8cae62043":"6wsxG","c5eb00d594046f72":"kquFJ","4050e24442ae9870":"4jSXe","be60b7a50df0d204":"03DWO","9ef0b9dc8ad1fc2a":"iFNHX","7525de448df38c88":"gU1yq","755dbd5cca9108e5":"6exTj","4ca70a1175195400":"7KmGh","6a3fda33b23d335a":"hJccm","de95f5b02dd259e3":"bQ1k9","597fd1722bc1e31a":"kXiIm","c58e64473d69acc5":"asCkD","7b6ebb63ac28ee0a":"48VoL","24dd3ab8b230fd52":"gVmXd","9ccd3464d7f82d2f":"4q7TV","1935a726b59862c":"iYA5e","1388ea8ab0baac7a":"2RmTc","37713734b0c1956":"bxBFd"}],"8FKfg":[function(require,module,exports,__globalThis) {
+"use strict";
+'use client';
+Object.defineProperty(exports, "__esModule", {
+    value: true
+});
+exports.default = adaptV4Theme;
+var _system = require("3242de34b3b788aa");
+function adaptV4Theme(inputTheme) {
+    console.warn([
+        'MUI: adaptV4Theme() is deprecated.',
+        'Follow the upgrade guide on https://mui.com/r/migration-v4#theme.'
+    ].join('\n'));
+    const { defaultProps = {}, mixins = {}, overrides = {}, palette = {}, props = {}, styleOverrides = {}, ...other } = inputTheme;
+    const theme = {
+        ...other,
+        components: {}
+    };
+    // default props
+    Object.keys(defaultProps).forEach((component)=>{
+        const componentValue = theme.components[component] || {};
+        componentValue.defaultProps = defaultProps[component];
+        theme.components[component] = componentValue;
+    });
+    Object.keys(props).forEach((component)=>{
+        const componentValue = theme.components[component] || {};
+        componentValue.defaultProps = props[component];
+        theme.components[component] = componentValue;
+    });
+    // CSS overrides
+    Object.keys(styleOverrides).forEach((component)=>{
+        const componentValue = theme.components[component] || {};
+        componentValue.styleOverrides = styleOverrides[component];
+        theme.components[component] = componentValue;
+    });
+    Object.keys(overrides).forEach((component)=>{
+        const componentValue = theme.components[component] || {};
+        componentValue.styleOverrides = overrides[component];
+        theme.components[component] = componentValue;
+    });
+    // theme.spacing
+    theme.spacing = (0, _system.createSpacing)(inputTheme.spacing);
+    // theme.mixins.gutters
+    const breakpoints = (0, _system.createBreakpoints)(inputTheme.breakpoints || {});
+    const spacing = theme.spacing;
+    theme.mixins = {
+        gutters: (styles = {})=>{
+            return {
+                paddingLeft: spacing(2),
+                paddingRight: spacing(2),
+                ...styles,
+                [breakpoints.up('sm')]: {
+                    paddingLeft: spacing(3),
+                    paddingRight: spacing(3),
+                    ...styles[breakpoints.up('sm')]
+                }
+            };
+        },
+        ...mixins
+    };
+    const { type: typeInput, mode: modeInput, ...paletteRest } = palette;
+    const finalMode = modeInput || typeInput || 'light';
+    theme.palette = {
+        // theme.palette.text.hint
+        text: {
+            hint: finalMode === 'dark' ? 'rgba(255, 255, 255, 0.5)' : 'rgba(0, 0, 0, 0.38)'
+        },
+        mode: finalMode,
+        type: finalMode,
+        ...paletteRest
+    };
+    return theme;
+}
+
+},{"3242de34b3b788aa":"1WaIj"}],"9ZDyZ":[function(require,module,exports,__globalThis) {
+"use strict";
+var _interopRequireDefault = require("4e75d35597054138").default;
+Object.defineProperty(exports, "__esModule", {
+    value: true
+});
+Object.defineProperty(exports, "unstable_createBreakpoints", {
+    enumerable: true,
+    get: function() {
+        return _createBreakpoints.default;
+    }
+});
+var _createBreakpoints = _interopRequireDefault(require("251dd965507dcb6c"));
+
+},{"4e75d35597054138":"1P3rZ","251dd965507dcb6c":"k5Ify"}],"8fLO4":[function(require,module,exports,__globalThis) {
+"use strict";
+var _interopRequireDefault = require("f0500c51d91f5f68").default;
+Object.defineProperty(exports, "__esModule", {
+    value: true
+});
+exports.default = createMuiStrictModeTheme;
+var _deepmerge = _interopRequireDefault(require("bac7ee1d4630c8a4"));
+var _createTheme = _interopRequireDefault(require("8175099ea82f8d89"));
+function createMuiStrictModeTheme(options, ...args) {
+    return (0, _createTheme.default)((0, _deepmerge.default)({
+        unstable_strictMode: true
+    }, options), ...args);
+}
+
+},{"f0500c51d91f5f68":"1P3rZ","bac7ee1d4630c8a4":"bLPf1","8175099ea82f8d89":"a1TKj"}],"e3r46":[function(require,module,exports,__globalThis) {
+"use strict";
+Object.defineProperty(exports, "__esModule", {
+    value: true
+});
+exports.default = createStyles;
+let warnedOnce = false;
+// To remove in v6
+function createStyles(styles) {
+    if (!warnedOnce) {
+        console.warn([
+            'MUI: createStyles from @mui/material/styles is deprecated.',
+            'Please use @mui/styles/createStyles'
+        ].join('\n'));
+        warnedOnce = true;
+    }
+    return styles;
+}
+
+},{}],"btihx":[function(require,module,exports,__globalThis) {
+"use strict";
+Object.defineProperty(exports, "__esModule", {
+    value: true
+});
+exports.alignProperty = alignProperty;
+exports.convertLength = convertLength;
+exports.fontGrid = fontGrid;
+exports.getUnit = getUnit;
+exports.isUnitless = isUnitless;
+exports.responsiveProperty = responsiveProperty;
+exports.toUnitless = toUnitless;
+function isUnitless(value) {
+    return String(parseFloat(value)).length === String(value).length;
+}
+// Ported from Compass
+// https://github.com/Compass/compass/blob/master/core/stylesheets/compass/typography/_units.scss
+// Emulate the sass function "unit"
+function getUnit(input) {
+    return String(input).match(/[\d.\-+]*\s*(.*)/)[1] || '';
+}
+// Emulate the sass function "unitless"
+function toUnitless(length) {
+    return parseFloat(length);
+}
+// Convert any CSS <length> or <percentage> value to any another.
+// From https://github.com/KyleAMathews/convert-css-length
+function convertLength(baseFontSize) {
+    return (length, toUnit)=>{
+        const fromUnit = getUnit(length);
+        // Optimize for cases where `from` and `to` units are accidentally the same.
+        if (fromUnit === toUnit) return length;
+        // Convert input length to pixels.
+        let pxLength = toUnitless(length);
+        if (fromUnit !== 'px') {
+            if (fromUnit === 'em') pxLength = toUnitless(length) * toUnitless(baseFontSize);
+            else if (fromUnit === 'rem') pxLength = toUnitless(length) * toUnitless(baseFontSize);
+        }
+        // Convert length in pixels to the output unit
+        let outputLength = pxLength;
+        if (toUnit !== 'px') {
+            if (toUnit === 'em') outputLength = pxLength / toUnitless(baseFontSize);
+            else if (toUnit === 'rem') outputLength = pxLength / toUnitless(baseFontSize);
+            else return length;
+        }
+        return parseFloat(outputLength.toFixed(5)) + toUnit;
+    };
+}
+function alignProperty({ size, grid }) {
+    const sizeBelow = size - size % grid;
+    const sizeAbove = sizeBelow + grid;
+    return size - sizeBelow < sizeAbove - size ? sizeBelow : sizeAbove;
+}
+// fontGrid finds a minimal grid (in rem) for the fontSize values so that the
+// lineHeight falls under a x pixels grid, 4px in the case of Material Design,
+// without changing the relative line height
+function fontGrid({ lineHeight, pixels, htmlFontSize }) {
+    return pixels / (lineHeight * htmlFontSize);
+}
+/**
+ * generate a responsive version of a given CSS property
+ * @example
+ * responsiveProperty({
+ *   cssProperty: 'fontSize',
+ *   min: 15,
+ *   max: 20,
+ *   unit: 'px',
+ *   breakpoints: [300, 600],
+ * })
+ *
+ * // this returns
+ *
+ * {
+ *   fontSize: '15px',
+ *   '@media (min-width:300px)': {
+ *     fontSize: '17.5px',
+ *   },
+ *   '@media (min-width:600px)': {
+ *     fontSize: '20px',
+ *   },
+ * }
+ * @param {Object} params
+ * @param {string} params.cssProperty - The CSS property to be made responsive
+ * @param {number} params.min - The smallest value of the CSS property
+ * @param {number} params.max - The largest value of the CSS property
+ * @param {string} [params.unit] - The unit to be used for the CSS property
+ * @param {Array.number} [params.breakpoints]  - An array of breakpoints
+ * @param {number} [params.alignStep] - Round scaled value to fall under this grid
+ * @returns {Object} responsive styles for {params.cssProperty}
+ */ function responsiveProperty({ cssProperty, min, max, unit = 'rem', breakpoints = [
+    600,
+    900,
+    1200
+], transform = null }) {
+    const output = {
+        [cssProperty]: `${min}${unit}`
+    };
+    const factor = (max - min) / breakpoints[breakpoints.length - 1];
+    breakpoints.forEach((breakpoint)=>{
+        let value = min + factor * breakpoint;
+        if (transform !== null) value = transform(value);
+        output[`@media (min-width:${breakpoint}px)`] = {
+            [cssProperty]: `${Math.round(value * 10000) / 10000}${unit}`
+        };
+    });
+    return output;
+}
+
+},{}],"6wsxG":[function(require,module,exports,__globalThis) {
+"use strict";
+var _interopRequireDefault = require("6abea5402ef82489").default;
+Object.defineProperty(exports, "__esModule", {
+    value: true
+});
+exports.default = responsiveFontSizes;
+var _formatMuiErrorMessage = _interopRequireDefault(require("ce2f38ea61eee0ac"));
+var _cssUtils = require("4eca37b22368d6d4");
+function responsiveFontSizes(themeInput, options = {}) {
+    const { breakpoints = [
+        'sm',
+        'md',
+        'lg'
+    ], disableAlign = false, factor = 2, variants = [
+        'h1',
+        'h2',
+        'h3',
+        'h4',
+        'h5',
+        'h6',
+        'subtitle1',
+        'subtitle2',
+        'body1',
+        'body2',
+        'caption',
+        'button',
+        'overline'
+    ] } = options;
+    const theme = {
+        ...themeInput
+    };
+    theme.typography = {
+        ...theme.typography
+    };
+    const typography = theme.typography;
+    // Convert between CSS lengths e.g. em->px or px->rem
+    // Set the baseFontSize for your project. Defaults to 16px (also the browser default).
+    const convert = (0, _cssUtils.convertLength)(typography.htmlFontSize);
+    const breakpointValues = breakpoints.map((x)=>theme.breakpoints.values[x]);
+    variants.forEach((variant)=>{
+        const style = typography[variant];
+        if (!style) return;
+        const remFontSize = parseFloat(convert(style.fontSize, 'rem'));
+        if (remFontSize <= 1) return;
+        const maxFontSize = remFontSize;
+        const minFontSize = 1 + (maxFontSize - 1) / factor;
+        let { lineHeight } = style;
+        if (!(0, _cssUtils.isUnitless)(lineHeight) && !disableAlign) throw new Error("MUI: Unsupported non-unitless line height with grid alignment.\nUse unitless line heights instead.");
+        if (!(0, _cssUtils.isUnitless)(lineHeight)) // make it unitless
+        lineHeight = parseFloat(convert(lineHeight, 'rem')) / parseFloat(remFontSize);
+        let transform = null;
+        if (!disableAlign) transform = (value)=>(0, _cssUtils.alignProperty)({
+                size: value,
+                grid: (0, _cssUtils.fontGrid)({
+                    pixels: 4,
+                    lineHeight,
+                    htmlFontSize: typography.htmlFontSize
+                })
+            });
+        typography[variant] = {
+            ...style,
+            ...(0, _cssUtils.responsiveProperty)({
+                cssProperty: 'fontSize',
+                min: minFontSize,
+                max: maxFontSize,
+                unit: 'rem',
+                breakpoints: breakpointValues,
+                transform
+            })
+        };
+    });
+    return theme;
+}
+
+},{"6abea5402ef82489":"1P3rZ","ce2f38ea61eee0ac":"cXsuk","4eca37b22368d6d4":"btihx"}],"iFNHX":[function(require,module,exports,__globalThis) {
+"use strict";
+'use client';
+var _interopRequireDefault = require("e55debba6a3a698f").default;
+Object.defineProperty(exports, "__esModule", {
+    value: true
+});
+exports.default = useThemeProps;
+var _useThemeProps = _interopRequireDefault(require("f37c43e4f51955ae"));
+var _defaultTheme = _interopRequireDefault(require("76daab5ec9258913"));
+var _identifier = _interopRequireDefault(require("f7d86afa37ac55f0"));
+function useThemeProps({ props, name }) {
+    return (0, _useThemeProps.default)({
+        props,
+        name,
+        defaultTheme: _defaultTheme.default,
+        themeId: _identifier.default
+    });
+}
+
+},{"e55debba6a3a698f":"1P3rZ","f37c43e4f51955ae":"l068H","76daab5ec9258913":"dsVJp","f7d86afa37ac55f0":"6SSma"}],"l068H":[function(require,module,exports,__globalThis) {
+"use strict";
+var _interopRequireDefault = require("1c909ce09236dc56").default;
+Object.defineProperty(exports, "__esModule", {
+    value: true
+});
+Object.defineProperty(exports, "default", {
+    enumerable: true,
+    get: function() {
+        return _useThemeProps.default;
+    }
+});
+Object.defineProperty(exports, "getThemeProps", {
+    enumerable: true,
+    get: function() {
+        return _getThemeProps.default;
+    }
+});
+var _useThemeProps = _interopRequireDefault(require("9ae2857601959f0a"));
+var _getThemeProps = _interopRequireDefault(require("a3e4fe27a5e6a7f4"));
+
+},{"1c909ce09236dc56":"1P3rZ","9ae2857601959f0a":"aDaxt","a3e4fe27a5e6a7f4":"cyqcd"}],"aDaxt":[function(require,module,exports,__globalThis) {
+"use strict";
+'use client';
+var _interopRequireDefault = require("267804c15a5e3f7a").default;
+Object.defineProperty(exports, "__esModule", {
+    value: true
+});
+exports.default = useThemeProps;
+var _getThemeProps = _interopRequireDefault(require("dc2d62e4900991ca"));
+var _useTheme = _interopRequireDefault(require("ebc6b593badac40c"));
+function useThemeProps({ props, name, defaultTheme, themeId }) {
+    let theme = (0, _useTheme.default)(defaultTheme);
+    if (themeId) theme = theme[themeId] || theme;
+    return (0, _getThemeProps.default)({
+        theme,
+        name,
+        props
+    });
+}
+
+},{"267804c15a5e3f7a":"1P3rZ","dc2d62e4900991ca":"cyqcd","ebc6b593badac40c":"9bObT"}],"cyqcd":[function(require,module,exports,__globalThis) {
+"use strict";
+var _interopRequireDefault = require("76bf39b56103a8b1").default;
+Object.defineProperty(exports, "__esModule", {
+    value: true
+});
+exports.default = getThemeProps;
+var _resolveProps = _interopRequireDefault(require("a769613b6a670c93"));
+function getThemeProps(params) {
+    const { theme, name, props } = params;
+    if (!theme || !theme.components || !theme.components[name] || !theme.components[name].defaultProps) return props;
+    return (0, _resolveProps.default)(theme.components[name].defaultProps, props);
+}
+
+},{"76bf39b56103a8b1":"1P3rZ","a769613b6a670c93":"hO4GV"}],"6exTj":[function(require,module,exports,__globalThis) {
+"use strict";
+'use client';
+var _interopRequireDefault = require("ec96335914447116").default;
+var _interopRequireWildcard = require("4473e0986fd3d9eb").default;
+Object.defineProperty(exports, "__esModule", {
+    value: true
+});
+exports.default = ThemeProvider;
+var React = _interopRequireWildcard(require("ffff5d2b95997a92"));
+var _ThemeProviderNoVars = _interopRequireDefault(require("dd88efac0a0d0447"));
+var _ThemeProviderWithVars = require("56240afa2f411c2");
+var _identifier = _interopRequireDefault(require("2373d5eac4aed5f8"));
+var _jsxRuntime = require("abee41afeef16458");
+function ThemeProvider({ theme, ...props }) {
+    const noVarsTheme = React.useMemo(()=>{
+        if (typeof theme === 'function') return theme;
+        const muiTheme = _identifier.default in theme ? theme[_identifier.default] : theme;
+        if (!('colorSchemes' in muiTheme)) {
+            if (!('vars' in muiTheme)) // For non-CSS variables themes, set `vars` to null to prevent theme inheritance from the upper theme.
+            // The example use case is the docs demo that uses ThemeProvider to customize the theme while the upper theme is using CSS variables.
+            return {
+                ...theme,
+                vars: null
+            };
+            return theme;
+        }
+        return null;
+    }, [
+        theme
+    ]);
+    if (noVarsTheme) return /*#__PURE__*/ (0, _jsxRuntime.jsx)(_ThemeProviderNoVars.default, {
+        theme: noVarsTheme,
+        ...props
+    });
+    return /*#__PURE__*/ (0, _jsxRuntime.jsx)(_ThemeProviderWithVars.CssVarsProvider, {
+        theme: theme,
+        ...props
+    });
+}
+
+},{"ec96335914447116":"1P3rZ","4473e0986fd3d9eb":"6TFJp","ffff5d2b95997a92":"jMk1U","dd88efac0a0d0447":"fp7A6","56240afa2f411c2":"kXiIm","2373d5eac4aed5f8":"6SSma","abee41afeef16458":"05iiF"}],"fp7A6":[function(require,module,exports,__globalThis) {
+"use strict";
+'use client';
+var _interopRequireDefault = require("a93a67505f03cc38").default;
+var _interopRequireWildcard = require("1db8d7324e225fd3").default;
+Object.defineProperty(exports, "__esModule", {
+    value: true
+});
+exports.default = ThemeProviderNoVars;
+var React = _interopRequireWildcard(require("3fe683a4b392ee76"));
+var _system = require("b57fa2925038b41e");
+var _identifier = _interopRequireDefault(require("37fefba726673ef6"));
+var _jsxRuntime = require("bf89517dbf20f6ff");
+function ThemeProviderNoVars({ theme: themeInput, ...props }) {
+    const scopedTheme = _identifier.default in themeInput ? themeInput[_identifier.default] : undefined;
+    return /*#__PURE__*/ (0, _jsxRuntime.jsx)(_system.ThemeProvider, {
+        ...props,
+        themeId: scopedTheme ? _identifier.default : undefined,
+        theme: scopedTheme || themeInput
+    });
+}
+
+},{"a93a67505f03cc38":"1P3rZ","1db8d7324e225fd3":"6TFJp","3fe683a4b392ee76":"jMk1U","b57fa2925038b41e":"1WaIj","37fefba726673ef6":"6SSma","bf89517dbf20f6ff":"05iiF"}],"kXiIm":[function(require,module,exports,__globalThis) {
+"use strict";
+'use client';
+var _interopRequireDefault = require("f71f1606772f3699").default;
+var _interopRequireWildcard = require("f45e67c3152f4567").default;
+Object.defineProperty(exports, "__esModule", {
+    value: true
+});
+exports.CssVarsProvider = void 0;
+exports.Experimental_CssVarsProvider = Experimental_CssVarsProvider;
+exports.useColorScheme = exports.getInitColorSchemeScript = void 0;
+var React = _interopRequireWildcard(require("6bf61cb1c17e6356"));
+var _styleFunctionSx = _interopRequireDefault(require("dde767c79e68e2dc"));
+var _system = require("d484ec0e330425d2");
+var _createTheme = _interopRequireDefault(require("51df668dd926bb48"));
+var _createTypography = _interopRequireDefault(require("95a4777f6a634239"));
+var _identifier = _interopRequireDefault(require("bd071396e0851da4"));
+var _InitColorSchemeScript = require("bd1e778adf083ad9");
+var _jsxRuntime = require("be4becea9d8a6c73");
+const { CssVarsProvider: InternalCssVarsProvider, useColorScheme, getInitColorSchemeScript: deprecatedGetInitColorSchemeScript } = (0, _system.unstable_createCssVarsProvider)({
+    themeId: _identifier.default,
+    // @ts-ignore ignore module augmentation tests
+    theme: ()=>(0, _createTheme.default)({
+            cssVariables: true
+        }),
+    colorSchemeStorageKey: _InitColorSchemeScript.defaultConfig.colorSchemeStorageKey,
+    modeStorageKey: _InitColorSchemeScript.defaultConfig.modeStorageKey,
+    defaultColorScheme: {
+        light: _InitColorSchemeScript.defaultConfig.defaultLightColorScheme,
+        dark: _InitColorSchemeScript.defaultConfig.defaultDarkColorScheme
+    },
+    resolveTheme: (theme)=>{
+        const newTheme = {
+            ...theme,
+            typography: (0, _createTypography.default)(theme.palette, theme.typography)
+        };
+        newTheme.unstable_sx = function sx(props) {
+            return (0, _styleFunctionSx.default)({
+                sx: props,
+                theme: this
+            });
+        };
+        return newTheme;
+    }
+});
+exports.useColorScheme = useColorScheme;
+let warnedOnce = false;
+// TODO: remove in v7
+// eslint-disable-next-line @typescript-eslint/naming-convention
+function Experimental_CssVarsProvider(props) {
+    if (!warnedOnce) {
+        console.warn([
+            'MUI: The Experimental_CssVarsProvider component has been ported into ThemeProvider.',
+            '',
+            "You should use `import { ThemeProvider } from '@mui/material/styles'` instead.",
+            'For more details, check out https://mui.com/material-ui/customization/css-theme-variables/usage/'
+        ].join('\n'));
+        warnedOnce = true;
+    }
+    return /*#__PURE__*/ (0, _jsxRuntime.jsx)(InternalCssVarsProvider, {
+        ...props
+    });
+}
+let warnedInitScriptOnce = false;
+// TODO: remove in v7
+const getInitColorSchemeScript = (params)=>{
+    if (!warnedInitScriptOnce) {
+        console.warn([
+            'MUI: The getInitColorSchemeScript function has been deprecated.',
+            '',
+            "You should use `import InitColorSchemeScript from '@mui/material/InitColorSchemeScript'`",
+            'and replace the function call with `<InitColorSchemeScript />` instead.'
+        ].join('\n'));
+        warnedInitScriptOnce = true;
+    }
+    return deprecatedGetInitColorSchemeScript(params);
+};
+/**
+ * TODO: remove this export in v7
+ * @deprecated
+ * The `CssVarsProvider` component has been deprecated and ported into `ThemeProvider`.
+ *
+ * You should use `ThemeProvider` and `createTheme()` instead:
+ *
+ * ```diff
+ * - import { CssVarsProvider, extendTheme } from '@mui/material/styles';
+ * + import { ThemeProvider, createTheme } from '@mui/material/styles';
+ *
+ * - const theme = extendTheme();
+ * + const theme = createTheme({
+ * +   cssVariables: true,
+ * +   colorSchemes: { light: true, dark: true },
+ * + });
+ *
+ * - <CssVarsProvider theme={theme}>
+ * + <ThemeProvider theme={theme}>
+ * ```
+ *
+ * To see the full documentation, check out https://mui.com/material-ui/customization/css-theme-variables/usage/.
+ */ exports.getInitColorSchemeScript = getInitColorSchemeScript;
+const CssVarsProvider = exports.CssVarsProvider = InternalCssVarsProvider;
+
+},{"f71f1606772f3699":"1P3rZ","f45e67c3152f4567":"6TFJp","6bf61cb1c17e6356":"jMk1U","dde767c79e68e2dc":"3qmy1","d484ec0e330425d2":"1WaIj","51df668dd926bb48":"a1TKj","95a4777f6a634239":"iYA5e","bd071396e0851da4":"6SSma","bd1e778adf083ad9":"4rGvI","be4becea9d8a6c73":"05iiF"}],"4rGvI":[function(require,module,exports,__globalThis) {
+"use strict";
+var _interopRequireDefault = require("4aa77561176f0b87").default;
+var _interopRequireWildcard = require("215d8ee5be69ebdf").default;
+Object.defineProperty(exports, "__esModule", {
+    value: true
+});
+exports.defaultConfig = exports.default = void 0;
+var React = _interopRequireWildcard(require("69b0ba915d677858"));
+var _propTypes = _interopRequireDefault(require("61b47b75a330a65a"));
+var _InitColorSchemeScript = _interopRequireDefault(require("c6b16aa0a6624eae"));
+var _jsxRuntime = require("7a3f1a6efb295a5d");
+const defaultConfig = exports.defaultConfig = {
+    attribute: 'data-mui-color-scheme',
+    colorSchemeStorageKey: 'mui-color-scheme',
+    defaultLightColorScheme: 'light',
+    defaultDarkColorScheme: 'dark',
+    modeStorageKey: 'mui-mode'
+};
+/**
+ *
+ * Demos:
+ *
+ * - [InitColorSchemeScript](https://mui.com/material-ui/react-init-color-scheme-script/)
+ *
+ * API:
+ *
+ * - [InitColorSchemeScript API](https://mui.com/material-ui/api/init-color-scheme-script/)
+ */ function InitColorSchemeScript(props) {
+    const { defaultMode = 'system', defaultLightColorScheme = defaultConfig.defaultLightColorScheme, defaultDarkColorScheme = defaultConfig.defaultDarkColorScheme, modeStorageKey = defaultConfig.modeStorageKey, colorSchemeStorageKey = defaultConfig.colorSchemeStorageKey, attribute: initialAttribute = defaultConfig.attribute, colorSchemeNode = 'document.documentElement', nonce } = props;
+    return /*#__PURE__*/ (0, _jsxRuntime.jsx)(_InitColorSchemeScript.default, {
+        defaultMode: defaultMode,
+        defaultLightColorScheme: defaultLightColorScheme,
+        defaultDarkColorScheme: defaultDarkColorScheme,
+        modeStorageKey: modeStorageKey,
+        colorSchemeStorageKey: colorSchemeStorageKey,
+        attribute: initialAttribute,
+        colorSchemeNode: colorSchemeNode,
+        nonce: nonce
+    });
+}
+InitColorSchemeScript.propTypes = {
+    // ┌────────────────────────────── Warning ──────────────────────────────┐
+    // │ These PropTypes are generated from the TypeScript type definitions. │
+    // │ To update them, edit the TypeScript types and run `pnpm proptypes`. │
+    // └─────────────────────────────────────────────────────────────────────┘
+    /**
+   * DOM attribute for applying a color scheme.
+   * @default 'data-mui-color-scheme'
+   * @example '.mode-%s' // for class based color scheme
+   * @example '[data-mode-%s]' // for data-attribute without '='
+   */ attribute: _propTypes.default.string,
+    /**
+   * The node (provided as string) used to attach the color-scheme attribute.
+   * @default 'document.documentElement'
+   */ colorSchemeNode: _propTypes.default.string,
+    /**
+   * localStorage key used to store `colorScheme`.
+   * @default 'mui-color-scheme'
+   */ colorSchemeStorageKey: _propTypes.default.string,
+    /**
+   * The default color scheme to be used in dark mode.
+   * @default 'dark'
+   */ defaultDarkColorScheme: _propTypes.default.string,
+    /**
+   * The default color scheme to be used in light mode.
+   * @default 'light'
+   */ defaultLightColorScheme: _propTypes.default.string,
+    /**
+   * The default mode when the storage is empty (user's first visit).
+   * @default 'system'
+   */ defaultMode: _propTypes.default.oneOf([
+        'dark',
+        'light',
+        'system'
+    ]),
+    /**
+   * localStorage key used to store `mode`.
+   * @default 'mui-mode'
+   */ modeStorageKey: _propTypes.default.string,
+    /**
+   * Nonce string to pass to the inline script for CSP headers.
+   */ nonce: _propTypes.default.string
+};
+var _default = exports.default = InitColorSchemeScript;
+
+},{"4aa77561176f0b87":"1P3rZ","215d8ee5be69ebdf":"6TFJp","69b0ba915d677858":"jMk1U","61b47b75a330a65a":"GNqOQ","c6b16aa0a6624eae":"8agna","7a3f1a6efb295a5d":"05iiF"}],"8agna":[function(require,module,exports,__globalThis) {
+"use strict";
+var _interopRequireDefault = require("68a81deed96e3567").default;
+Object.defineProperty(exports, "__esModule", {
+    value: true
+});
+Object.defineProperty(exports, "default", {
+    enumerable: true,
+    get: function() {
+        return _InitColorSchemeScript.default;
+    }
+});
+var _InitColorSchemeScript = _interopRequireDefault(require("cf35a495af265f47"));
+
+},{"68a81deed96e3567":"1P3rZ","cf35a495af265f47":"6VlWa"}],"7KmGh":[function(require,module,exports,__globalThis) {
+"use strict";
+var _interopRequireDefault = require("2813beb5fcead744").default;
+Object.defineProperty(exports, "__esModule", {
+    value: true
+});
+exports.default = makeStyles;
+var _formatMuiErrorMessage = _interopRequireDefault(require("10fbff6465919068"));
+function makeStyles() {
+    throw new Error("MUI: makeStyles is no longer exported from @mui/material/styles.\nYou have to import it from @mui/styles.\nSee https://mui.com/r/migration-v4/#mui-material-styles for more details.");
+}
+
+},{"2813beb5fcead744":"1P3rZ","10fbff6465919068":"cXsuk"}],"hJccm":[function(require,module,exports,__globalThis) {
+"use strict";
+var _interopRequireDefault = require("554aba97516b6810").default;
+Object.defineProperty(exports, "__esModule", {
+    value: true
+});
+exports.default = withStyles;
+var _formatMuiErrorMessage = _interopRequireDefault(require("564138a0de96cd90"));
+function withStyles() {
+    throw new Error("MUI: withStyles is no longer exported from @mui/material/styles.\nYou have to import it from @mui/styles.\nSee https://mui.com/r/migration-v4/#mui-material-styles for more details.");
+}
+
+},{"554aba97516b6810":"1P3rZ","564138a0de96cd90":"cXsuk"}],"bQ1k9":[function(require,module,exports,__globalThis) {
+"use strict";
+var _interopRequireDefault = require("92b08439aff2893b").default;
+Object.defineProperty(exports, "__esModule", {
+    value: true
+});
+exports.default = withTheme;
+var _formatMuiErrorMessage = _interopRequireDefault(require("b3de7d1a7b044330"));
+function withTheme() {
+    throw new Error("MUI: withTheme is no longer exported from @mui/material/styles.\nYou have to import it from @mui/styles.\nSee https://mui.com/r/migration-v4/#mui-material-styles for more details.");
+}
+
+},{"92b08439aff2893b":"1P3rZ","b3de7d1a7b044330":"cXsuk"}],"48VoL":[function(require,module,exports,__globalThis) {
+"use strict";
+var _interopRequireDefault = require("4a6bddfaeb4e9e51").default;
+Object.defineProperty(exports, "__esModule", {
+    value: true
+});
+exports.default = deprecatedExtendTheme;
+var _createThemeWithVars = _interopRequireDefault(require("22d932b106c1ff8d"));
+let warnedOnce = false;
+function deprecatedExtendTheme(...args) {
+    if (!warnedOnce) {
+        console.warn([
+            'MUI: The `experimental_extendTheme` has been stabilized.',
+            '',
+            "You should use `import { extendTheme } from '@mui/material/styles'`"
+        ].join('\n'));
+        warnedOnce = true;
+    }
+    return (0, _createThemeWithVars.default)(...args);
+}
+
+},{"4a6bddfaeb4e9e51":"1P3rZ","22d932b106c1ff8d":"asCkD"}],"5EcK1":[function(require,module,exports,__globalThis) {
+"use strict";
+var _interopRequireDefault = require("bcd9f5c6f00104b6").default;
+Object.defineProperty(exports, "__esModule", {
+    value: true
+});
+exports.default = void 0;
+var _generateUtilityClasses = _interopRequireDefault(require("52ff5b7806c5b966"));
+const boxClasses = (0, _generateUtilityClasses.default)('MuiBox', [
+    'root'
+]);
+var _default = exports.default = boxClasses;
+
+},{"bcd9f5c6f00104b6":"1P3rZ","52ff5b7806c5b966":"3J0Rs"}],"2Oxyk":[function(require,module,exports,__globalThis) {
 module.exports = "body, html {\n  background-color: #f0f8ff;\n  margin: 0;\n  padding: 0;\n}\n\nbody {\n  overflow-y: scroll;\n}\n";
 
 },{}]},["7KwkS","4dmnR"], "4dmnR", "parcelRequiree135", {}, null, null, "http://localhost:1234")
