@@ -89,14 +89,18 @@ void showText(const String &status)
 
 void setStatus(const String &status, bool isTop = true)
 {
+  String statusToSet = status;
+  if (isTop) {
+    statusToSet += " Connect @ " + webURL;
+  }
   display.setTextWrap(false);
   char *targetStatus = isTop ? topStatus : bottomStatus;
   size_t bufSize = isTop ? sizeof(topStatus) : sizeof(bottomStatus);
 
-  strncpy(targetStatus, status.c_str(), bufSize - 1);
+  strncpy(targetStatus, statusToSet.c_str(), bufSize - 1);
   targetStatus[bufSize - 1] = '\0';
 
-  if (status.length() >= bufSize)
+  if (statusToSet.length() >= bufSize)
   {
     targetStatus[bufSize - 1] = '\0';
   }
@@ -190,10 +194,10 @@ void setup()
   String hostName = WiFi.localIP().toString();
 
   setupWebServer();
-  if (isMDNSEnabled)
-  {
-    hostName = deviceName + ".local";
-  }
+  //if (isMDNSEnabled)
+  //{
+  //  hostName = deviceName + ".local";
+  //}
 
   webURL = "http://" + hostName;
 
