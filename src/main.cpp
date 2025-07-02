@@ -14,22 +14,20 @@
 
 #define EEPROM_SIZE 512
 
+// Display settings
 #define SCREEN_WIDTH 128
 #define SCREEN_HEIGHT 32
-
-#define OLED_RESET -1
-#define SCREEN_ADDRESS 0x3C
-
-#define I2S_DOUT 47
-#define I2S_BCLK 21
-#define I2S_LRC 38
 
 #define I2C_SDA 17
 #define I2C_SCL 18
 
-#define BLUE_LED_PIN 2
+#define OLED_RESET -1
+#define SCREEN_ADDRESS 0x3C
 
-#define BUTTON_PIN 0
+// DAC I2S settings
+#define I2S_DOUT 47
+#define I2S_BCLK 21
+#define I2S_LRC 38
 
 String deviceName = "ARadio";
 String devicePassword = "12345678";
@@ -50,6 +48,8 @@ int bottomStatusTextX = 0;
 int topScrollSpeed = 20;
 int bottomScrollSpeed = 20;
 
+bool isDisplayEnabled = false;
+
 Audio audio;
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 
@@ -59,9 +59,10 @@ void setupDisplay()
   if (!display.begin(SSD1306_SWITCHCAPVCC, SCREEN_ADDRESS))
   {
     Serial.println(F("SSD1306 allocation failed"));
-    delay(100000);
-    ESP.restart();
+    isDisplayEnabled = false;
+    return;
   }
+  isDisplayEnabled = true;
   display.setTextColor(SSD1306_WHITE);
   display.ssd1306_command(SSD1306_SETCONTRAST);
   display.ssd1306_command(0x01);
@@ -71,6 +72,9 @@ void setupDisplay()
 
 void showText(const String &status)
 {
+  if(!isDisplayEnabled) {
+    return;
+  }
   display.clearDisplay();
   display.setTextSize(1);
   display.setTextWrap(true);
@@ -93,12 +97,15 @@ void setStatus(const String &status, bool isTop = true)
   size_t bufSize = isTop ? sizeof(topStatus) : sizeof(bottomStatus);
 
   if (isTop) {
-
     snprintf(targetStatus, bufSize, "%s Connect @ %s", status, localWebUIURL);
   } else {
 
     strncpy(targetStatus, status.c_str(), bufSize - 1);
     targetStatus[bufSize - 1] = '\0'; 
+  }
+
+  if(!isDisplayEnabled) {
+    return;
   }
 
   display.setTextWrap(false);
@@ -207,7 +214,9 @@ void setup()
 
 void scrollText()
 {
-
+  if(!isDisplayEnabled) {
+    return;
+  }
   display.clearDisplay();
 
   display.setTextSize(1);
