@@ -10,6 +10,8 @@
 #include "webroutes.h"
 #include "epromAddreses.h"
 
+#define ENABLE_MDNS 0
+
 #define EEPROM_SIZE 512
 
 #define SCREEN_WIDTH 128
@@ -39,7 +41,7 @@ char stationName[256] = "";
 char stationTitle[256] = "";
 char lastStreamURL[256] = "";
 
-String webURL = "";
+char localWebUIURL[200] = "";
 
 int topStatusTextWidth = 0;
 int bottomStatusTextWidth = 0;
@@ -50,8 +52,6 @@ int bottomScrollSpeed = 20;
 
 Audio audio;
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
-
-bool isMDNSEnabled = true;
 
 void setupDisplay()
 {
@@ -89,21 +89,19 @@ void showText(const String &status)
 
 void setStatus(const String &status, bool isTop = true)
 {
-  String statusToSet = status;
-  if (isTop) {
-    statusToSet += " Connect @ " + webURL;
-  }
-  display.setTextWrap(false);
   char *targetStatus = isTop ? topStatus : bottomStatus;
   size_t bufSize = isTop ? sizeof(topStatus) : sizeof(bottomStatus);
 
-  strncpy(targetStatus, statusToSet.c_str(), bufSize - 1);
-  targetStatus[bufSize - 1] = '\0';
+  if (isTop) {
 
-  if (statusToSet.length() >= bufSize)
-  {
-    targetStatus[bufSize - 1] = '\0';
+    snprintf(targetStatus, bufSize, "%s Connect @ %s", status, localWebUIURL);
+  } else {
+
+    strncpy(targetStatus, status.c_str(), bufSize - 1);
+    targetStatus[bufSize - 1] = '\0'; 
   }
+
+  display.setTextWrap(false);
 
   int16_t x1, y1;
   uint16_t w, h;
@@ -151,16 +149,16 @@ void setupWifi()
     showText("Connected to Wifi");
   }
 
-  if (!MDNS.begin(deviceName))
-  {
-    Serial.println("Error setting up MDNS responder!");
-    isMDNSEnabled = false;
-  }
-  else
-  {
-    Serial.println("mDNS responder started");
-    isMDNSEnabled = true;
-  }
+  String hostName = WiFi.localIP().toString();
+
+  #if ENABLE_MDNS
+    if (MDNS.begin(deviceName.c_str())) {
+      hostName = deviceName + ".local";
+    }
+  #endif
+
+  snprintf(localWebUIURL, sizeof(localWebUIURL), "http://%s", hostName.c_str());
+
 }
 
 void setup()
@@ -191,29 +189,19 @@ void setup()
     audio.setVolume(12);
   }
 
-  String hostName = WiFi.localIP().toString();
-
   setupWebServer();
-  //if (isMDNSEnabled)
-  //{
-  //  hostName = deviceName + ".local";
-  //}
-
-  webURL = "http://" + hostName;
-
 
   EEPROM.readString(0, lastStreamURL, sizeof(lastStreamURL));
 
   if (strlen(lastStreamURL) > 0)
   {
-    Serial.println("Resuming last stream: " + String(lastStreamURL));
     audio.connecttohost(lastStreamURL);
     setStatus("Resuming: " + String(lastStreamURL), true);
   }
   else
   {
     setStatus("No previous stream found", true);
-    setStatus("Connect to " + webURL, false);
+    setStatus(localWebUIURL, false);
   }
 }
 
