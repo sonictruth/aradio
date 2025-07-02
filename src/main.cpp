@@ -6,7 +6,7 @@
 #include "webroutes.h"
 #include "epromAddreses.h"
 
-#include "display_serial.h"
+#include "display_gc9a01a.h"
 #include "audio_es8311.h"
 
 // #include "display_sdd1306.h"
