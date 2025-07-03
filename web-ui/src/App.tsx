@@ -25,6 +25,7 @@ import Fade from '@mui/material/Fade';
 import IconButton from '@mui/material/IconButton';
 import Snackbar from '@mui/material/Snackbar';
 import Box from '@mui/material/Box';
+import Alert from '@mui/material/Alert';
 
 import { StationBox } from './StationBox';
 
@@ -54,9 +55,10 @@ export function App() {
   const [currentStationName, setCurrentStationName] = useState<string>('');
   const [currentStationTitle, setCurrentStationTitle] = useState<string>('');
   const [cmdIsLoading, setCmdIsLoading] = useState<boolean>(false);
-  const [snackbar, setSnackbar] = useState<{ open: boolean; message: string }>({
+  const [snackbar, setSnackbar] = useState<{ open: boolean; message: string; isError: boolean}>({
     open: false,
     message: '',
+    isError: false,
   });
 
   const [searchKeyword, setSearchKeyword] = useState<string>('');
@@ -64,46 +66,59 @@ export function App() {
   const [volume, setVolume] = useState<number>(0);
   const debouncedVolume = useDebounce(volume, uiDebounceTime);
 
-  const playStream = async (url: string) => {
+  const doFetch = async (url: string): Promise<any> => {
     setCmdIsLoading(true);
     try {
-      await fetch(`${radioBaseUrl}/play?url=${encodeURIComponent(url)}`);
+      const response = await fetch(radioBaseUrl + url);
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      const data = await response.text();
+      setCmdIsLoading(false);
+      return data;
     } catch (error) {
-      setSnackbar({
-        open: true,
-        message: `Error playing {$url}`,
-      });
+      setCmdIsLoading(false);
+      throw error;
+    }
+  };
+
+  const showMessage = (message: string, isError: boolean = false) => {
+    setSnackbar({
+      open: true,
+      message: message,
+      isError: isError,
+    });
+  };
+
+  const playStream = async (url: string) => {
+    try {
+      await doFetch(`/play?url=${encodeURIComponent(url)}`);
+    } catch (error) {
+      showMessage(`Error playing stream`, true);
+      console.log('Error playing stream:', error);
     }
     await updateStatus();
-    setCmdIsLoading(false);
   };
 
   const stopStream = async () => {
-    setCmdIsLoading(true);
     try {
-      await fetch(`${radioBaseUrl}/stop`);
+      const response = await doFetch(`/stop`);
     } catch (error) {
-      console.error('Error playing stream:', error);
+      console.log('Error stopping stream:', error);
+      showMessage('Stream might be stopped already', true);
     }
     await updateStatus();
-    setCmdIsLoading(false);
   };
 
   useEffect(() => {
     async function setVolumeAsync() {
       if (debouncedVolume !== 0) {
-        const volumeUrl = `${radioBaseUrl}/setvolume?value=${debouncedVolume}`;
-        setCmdIsLoading(true);
+        const volumeUrl = `/setvolume?value=${debouncedVolume}`;
         try {
-          await fetch(volumeUrl);
+          await doFetch(volumeUrl);
         } catch (error) {
-          console.error('Error setting volume:', error);
-          setSnackbar({
-            open: true,
-            message: `Error setting volume to ${debouncedVolume}`,
-          });
+          console.log('Error setting volume:', error);
         }
-        setCmdIsLoading(false);
       }
     }
     setVolumeAsync();
@@ -111,20 +126,17 @@ export function App() {
 
   async function updateStatus() {
     try {
-      const response = await fetch(`${radioBaseUrl}/status`);
-      const status = (await response.text()).split(',');
+      const response = await doFetch(`/status`);
 
+      const status = response.split(',');
       const [isPlayingStatus, volumeStatus, stationName, statonTitle] = status;
       setIsPlaying(isPlayingStatus === '1');
       setVolume(parseInt(volumeStatus, 10));
       setCurrentStationName(stationName);
       setCurrentStationTitle(statonTitle);
     } catch (error) {
-      console.warn('Error:', error);
-      setSnackbar({
-        open: true,
-        message: 'Error fetching status',
-      });
+      showMessage('Error updating status', true);
+      console.log('Error updating status:', error);
     }
   }
 
@@ -135,11 +147,8 @@ export function App() {
         const apiCountries = await api.getCountries();
         setCountries(apiCountries as Country[]);
       } catch (error) {
-        console.warn('Error:', error);
-        setSnackbar({
-          open: true,
-          message: 'Error fetching countries',
-        });
+        console.log('Error:', error);
+        showMessage('Error fetching countries', true);
       }
       await updateStatus();
       setCmdIsLoading(false);
@@ -227,15 +236,12 @@ export function App() {
   }
   async function showStationsByName(showStationsByName: string): Promise<void> {
     if (!showStationsByName || showStationsByName.trim() === '') {
-      setSnackbar({ open: true, message: 'Please enter a search term' });
+      showMessage('Search term cannot be empty');
       return;
     }
 
     if (showStationsByName.length < 3) {
-      setSnackbar({
-        open: true,
-        message: 'Search term must be at least 3 characters long',
-      });
+      showMessage('Search term must be at least 3 characters long');
       return;
     }
 
@@ -250,11 +256,8 @@ export function App() {
       stationsByName = sortStations(stationsByName);
       setStations(stationsByName);
     } catch (error) {
-      setSnackbar({
-        open: true,
-        message: 'Error fetching stations by name',
-      });
       console.warn('Error fetching stations by name:', error);
+      showMessage('Error fetching stations by name', true);
     }
     setIsLoading(false);
   }
@@ -402,9 +405,18 @@ export function App() {
       <Snackbar
         open={snackbar.open}
         autoHideDuration={4000}
-        onClose={() => setSnackbar({ open: false, message: '' })}
-        message={snackbar.message}
-      />
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+        onClose={() => setSnackbar({ open: false, message: '', isError: false })}
+       
+      >
+        <Alert
+          severity={snackbar.isError ? 'error' : 'info'}
+          variant='filled'
+          sx={{ width: '100%' }}
+        >
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </Container>
   );
 }
