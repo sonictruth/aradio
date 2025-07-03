@@ -6,6 +6,8 @@ import IconButton from '@mui/material/IconButton';
 
 import Button from '@mui/material/Button';
 import Typography from '@mui/material/Typography';
+import Box from '@mui/material/Box';
+import Stack from '@mui/material/Stack';
 import { Station } from 'radio-browser-api';
 
 import flags from './flags';
@@ -31,8 +33,6 @@ export function StationBox({
   onRemoveFavourites: (stationId: string) => void;
   onPlayStreamURL: (url: string) => void;
 }) {
-
-
   return (
     <Paper key={station.id} sx={{ p: 1 }}>
       <Typography variant='subtitle1'>
@@ -44,6 +44,10 @@ export function StationBox({
               height: 24,
               marginRight: 8,
               borderRadius: '30%',
+            }}
+            alt=''
+            onError={(e) => {
+              (e.currentTarget as HTMLImageElement).style.display = 'none';
             }}
           />
         )}
@@ -61,33 +65,35 @@ export function StationBox({
           {station.tags.join(' • ')}
         </Typography>
       )}
-      <Button
-        variant='outlined'
-        size='small'
-        onClick={() => onPlayStreamURL(station.urlResolved || station.url)}
-        sx={{ mt: 1, mr: 1 }}
-      >
-        Listen
-      </Button>
-      {isFavourite ? (
+
+      <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mt: 1 }}>
+        <Button
+          variant='outlined'
+          size='small'
+          onClick={() => onPlayStreamURL(station.urlResolved || station.url)}
+        >
+          Listen
+        </Button>
+        <Box>
+          {isFavourite ? (
         <IconButton
           size='small'
           color='primary'
-          sx={{ mt: 1 }}
           onClick={() => onRemoveFavourites(station.id)}
         >
           <Star />
         </IconButton>
-      ) : (
+          ) : (
         <IconButton
           size='small'
           color='default'
-          sx={{ mt: 1 }}
           onClick={() => onAddFavorites(station)}
         >
           <StarOutlineIcon />
         </IconButton>
-      )}
+          )}
+        </Box>
+      </Stack>
     </Paper>
   );
 }

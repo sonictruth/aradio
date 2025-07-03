@@ -1,3 +1,5 @@
+import { ThemeProvider, createTheme } from '@mui/material/styles';
+import CssBaseline from '@mui/material/CssBaseline';
 import { useEffect, useState } from 'react';
 import { useDebounce } from '@uidotdev/usehooks';
 import { RadioBrowserApi, StationSearchType, Station } from 'radio-browser-api';
@@ -13,6 +15,7 @@ import VolumeDown from '@mui/icons-material/VolumeDown';
 import VolumeUp from '@mui/icons-material/VolumeUp';
 import HourglassBottomIcon from '@mui/icons-material/HourglassBottom';
 import SearchIcon from '@mui/icons-material/Search';
+import RadioIcon from '@mui/icons-material/Radio';
 
 import FormControl from '@mui/material/FormControl';
 import InputLabel from '@mui/material/InputLabel';
@@ -55,7 +58,11 @@ export function App() {
   const [currentStationName, setCurrentStationName] = useState<string>('');
   const [currentStationTitle, setCurrentStationTitle] = useState<string>('');
   const [cmdIsLoading, setCmdIsLoading] = useState<boolean>(false);
-  const [snackbar, setSnackbar] = useState<{ open: boolean; message: string; isError: boolean}>({
+  const [snackbar, setSnackbar] = useState<{
+    open: boolean;
+    message: string;
+    isError: boolean;
+  }>({
     open: false,
     message: '',
     isError: false,
@@ -169,7 +176,7 @@ export function App() {
   async function showStationsByCountry(
     event: React.ChangeEvent<HTMLSelectElement>
   ): Promise<void> {
-    setIsLoading(false);
+    setIsLoading(true);
     setStations(null);
     const countryCode = event.target.value;
 
@@ -259,161 +266,185 @@ export function App() {
     setIsLoading(false);
   }
 
+  const darkTheme = createTheme({
+    palette: {
+      mode: 'dark',
+    },
+  });
+
   return (
-    <Container
-      maxWidth='md'
-      sx={{
-        opacity: cmdIsLoading ? 0.5 : 1,
-        pointerEvents: cmdIsLoading ? 'none' : 'auto',
-        transition: 'opacity 0.2s',
-      }}
-    >
-      <Stack>
-        <Stack
-          direction='row'
-          spacing={1}
-          justifyContent='space-between'
-          alignItems='center'
-        >
-          <Box>
-            <Typography variant='h4' component='h4' sx={{ pt: 2 }}>
-              📻 ARadio
-            </Typography>
-          </Box>
-
-          <Box>
-            <Button
-              variant='contained'
-              color={isPlaying ? 'error' : 'primary'}
-              onClick={stopStream}
-              disabled={cmdIsLoading}
-            >
-              Stop
-            </Button>
-          </Box>
-        </Stack>
-        <Typography variant='subtitle1' sx={{ pt: 2, textAlign: 'center' }}>
-          {isPlaying ? currentStationName + ' ' + currentStationTitle : ''}
-        </Typography>
-        <Stack direction='column' spacing={1}>
-          <Stack
-            width='100%'
-            spacing={2}
-            direction='row'
-            sx={{ alignItems: 'center', mb: 1 }}
-          >
-            <VolumeDown />
-            <Slider
-              aria-label='Volume'
-              value={volume}
-              min={0}
-              max={21}
-              onChange={(_, value) =>
-                setVolume(typeof value === 'number' ? value : 0)
-              }
-            />
-            <VolumeUp />
-          </Stack>
-          <FormControl
-            fullWidth
-            sx={{
-              flexDirection: 'row',
-              alignItems: 'center',
-              gap: 1,
-              display: 'flex',
-            }}
-          >
-            <TextField
-              value={searchKeyword}
-              label='Search by name'
-              variant='standard'
-              onChange={(e) => setSearchKeyword(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  showStationsByName(searchKeyword);
-                }
-              }}
-              sx={{ flex: 1 }}
-            />
-            <IconButton onClick={() => showStationsByName(searchKeyword)}>
-              <SearchIcon />
-            </IconButton>
-          </FormControl>
-          <FormControl fullWidth>
-            <InputLabel id='search-by-country'></InputLabel>
-            <NativeSelect
-              defaultValue=''
-              variant='filled'
-              onChange={showStationsByCountry}
-            >
-              <option value='' disabled>
-                Search by Country
-              </option>
-              {countries?.map(
-                (country: {
-                  name: string;
-                  iso_3166_1: string;
-                  stationcount: number;
-                }) => (
-                  <option key={country.iso_3166_1} value={country.iso_3166_1}>
-                    {country.name} ({country.stationcount})
-                  </option>
-                )
-              )}
-            </NativeSelect>
-          </FormControl>
-          <Button onClick={showFavouriteStations} fullWidth variant='outlined'>
-            Favourite Stations
-          </Button>
-        </Stack>
-      </Stack>
-      <Stack padding={1}>
-        {!isLoading &&
-          (stations && stations.length > 0 ? (
-            <Stack spacing={1}>
-              {stations.map((station) => (
-                <StationBox
-                  key={station.id}
-                  isFavourite={isFavourite(station.id)}
-                  station={station}
-                  onAddFavorites={addToFavourites}
-                  onRemoveFavourites={removeFromFavourites}
-                  onPlayStreamURL={playStream}
-                />
-              ))}
-            </Stack>
-          ) : (
-            <Typography variant='body2' color='text.secondary'>
-              Nothing stations found.
-            </Typography>
-          ))}
-
-        {isLoading && (
-          <Typography variant='body2' color='text.secondary' align='center'>
-            <Fade in={isLoading} timeout={200}>
-              <span>
-                <HourglassBottomIcon fontSize='small' /> Wait...
-              </span>
-            </Fade>
-          </Typography>
-        )}
-      </Stack>
-
-      <Snackbar
-        open={snackbar.open}
-        autoHideDuration={4000}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
-        onClose={() => setSnackbar({ open: false, message: '', isError: false })}
-       
+    <ThemeProvider theme={darkTheme}>
+      <CssBaseline />
+      <Container
+        maxWidth='md'
+        sx={{
+          opacity: cmdIsLoading ? 0.5 : 1,
+          pointerEvents: cmdIsLoading ? 'none' : 'auto',
+          transition: 'opacity 0.2s',
+        }}
       >
-        <Alert
-          severity={snackbar.isError ? 'error' : 'info'}
-          variant='filled'
-          sx={{ width: '100%' }}
+        <Stack>
+          <Stack
+            sx={{ pt: 2 }}
+            direction='row'
+            spacing={1}
+            justifyContent='space-between'
+            alignItems='center'
+          >
+            <Box >
+              <Typography className="title-font" variant='h4' sx={{ display: 'flex', alignItems: 'center' }}>
+                <RadioIcon
+                  sx={{ fontSize: 48, verticalAlign: 'middle', pr: 2, color: 'orange' }}
+                />
+                ARadio
+              </Typography>
+            </Box>
+
+            <Box>
+              <Button
+                variant={isPlaying ? 'contained' : 'outlined'}
+                color={isPlaying ? 'error' : 'primary'}
+                onClick={stopStream}
+                disabled={cmdIsLoading}
+              >
+                Stop
+              </Button>
+            </Box>
+          </Stack>
+          <Typography variant='subtitle1' sx={{ pt: 2, textAlign: 'center' }}>
+            {isPlaying ? currentStationName + ' ' + currentStationTitle : ''}
+          </Typography>
+          <Stack direction='column' spacing={1}>
+            <Stack
+              width='100%'
+              spacing={2}
+              direction='row'
+              sx={{ alignItems: 'center', mb: 1 }}
+            >
+              <VolumeDown />
+              <Slider
+                aria-label='Volume'
+                value={volume}
+                min={0}
+                max={21}
+                onChange={(_, value) =>
+                  setVolume(typeof value === 'number' ? value : 0)
+                }
+              />
+              <VolumeUp />
+            </Stack>
+            <FormControl
+              fullWidth
+              sx={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: 1,
+                display: 'flex',
+              }}
+            >
+              <TextField
+                value={searchKeyword}
+                label='Search by name'
+                variant='standard'
+                onChange={(e) => setSearchKeyword(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    showStationsByName(searchKeyword);
+                  }
+                }}
+                sx={{ flex: 1 }}
+              />
+              <IconButton onClick={() => showStationsByName(searchKeyword)}>
+                <SearchIcon />
+              </IconButton>
+            </FormControl>
+            <FormControl fullWidth>
+              <InputLabel id='search-by-country'></InputLabel>
+              <NativeSelect
+                defaultValue=''
+                variant='filled'
+                onChange={showStationsByCountry}
+              >
+                <option value='' disabled>
+                  Search by Country
+                </option>
+                {countries?.map(
+                  (country: {
+                    name: string;
+                    iso_3166_1: string;
+                    stationcount: number;
+                  }) => (
+                    <option key={country.iso_3166_1} value={country.iso_3166_1}>
+                      {country.name} ({country.stationcount})
+                    </option>
+                  )
+                )}
+              </NativeSelect>
+            </FormControl>
+            <Button
+              onClick={showFavouriteStations}
+              fullWidth
+              variant='outlined'
+            >
+              Favourite Stations
+            </Button>
+          </Stack>
+        </Stack>
+        <Stack padding={1}>
+          {!isLoading &&
+            (stations && stations.length > 0 ? (
+              <Stack spacing={1}>
+                {stations.map((station) => (
+                  <StationBox
+                    key={station.id}
+                    isFavourite={isFavourite(station.id)}
+                    station={station}
+                    onAddFavorites={addToFavourites}
+                    onRemoveFavourites={removeFromFavourites}
+                    onPlayStreamURL={playStream}
+                  />
+                ))}
+              </Stack>
+            ) : (
+              ''
+            ))}
+
+          {!isLoading &&
+            !cmdIsLoading &&
+            (!stations || stations.length === 0) && (
+              <Typography variant='body2' color='text.secondary' align='center'>
+                No stations found.
+              </Typography>
+            )}
+
+          {isLoading && (
+            <Typography variant='body2' color='text.secondary' align='center'>
+              <Fade in={isLoading} timeout={200}>
+                <span>
+                  <HourglassBottomIcon fontSize='small' /> Wait...
+                </span>
+              </Fade>
+            </Typography>
+          )}
+        </Stack>
+
+        <Snackbar
+          open={snackbar.open}
+          autoHideDuration={4000}
+          anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+          onClose={() =>
+            setSnackbar({ open: false, message: '', isError: false })
+          }
         >
-          {snackbar.message}
-        </Alert>
-      </Snackbar>
-    </Container>
+          <Alert
+            severity={snackbar.isError ? 'error' : 'info'}
+            variant='filled'
+            sx={{ width: '100%' }}
+          >
+            {snackbar.message}
+          </Alert>
+        </Snackbar>
+      </Container>
+    </ThemeProvider>
   );
 }
