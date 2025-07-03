@@ -182,10 +182,7 @@ export function App() {
       setStations(stationsByCountry);
     } catch (error) {
       console.warn('Error fetching stations by country:', error);
-      setSnackbar({
-        open: true,
-        message: 'Error fetching stations by country',
-      });
+      showMessage('Error fetching stations by country', true);
     }
     setIsLoading(false);
   }
