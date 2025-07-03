@@ -6,7 +6,9 @@
 #include "webroutes.h"
 #include "epromAddreses.h"
 
-#include "display_serial.h"
+// #include "display_serial.h"
+
+#include "display_gc9a01a.h"
 #include "audio_es8311.h"
 
 // #include "display_sdd1306.h"
@@ -111,9 +113,8 @@ void loop()
 {
   vTaskDelay(1);
   audio.loop();
-
   static unsigned long lastScroll = 0;
-  if (millis() - lastScroll >= 500)
+  if (millis() - lastScroll >= 250)
   {
     displayLoop();
     lastScroll = millis();
