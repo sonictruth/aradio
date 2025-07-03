@@ -73,8 +73,11 @@ inline void setupWebServer()
                 if (audio.isRunning())
                 {
                   audio.stopSong();
-                  delay(2000);
+                  while (audio.isRunning()) {
+                     vTaskDelay(10);
+                  }
                 }
+                delay(1000);
                 if (audio.connecttohost(streamURL.c_str()))
                 {
                   code = 200;

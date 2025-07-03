@@ -11,7 +11,7 @@
 #define TFT_RESET 38
 #define TFT_BL 42
 
-Adafruit_GC9A01A tft(TFT_CS, TFT_DC);
+Adafruit_GC9A01A tft(TFT_CS, TFT_DC, TFT_MOSI, TFT_SCLK, TFT_RESET, -1);
 
 void setupDisplay()
 {
@@ -55,11 +55,11 @@ void setStatus(const String &status, bool isTop = true)
     int16_t y;
     if (isTop)
     {
-        y = 0;
+        y = 90;
     }
     else
     {
-        y = tft.height() - h;
+        y = tft.height() - 100;
     }
 
     tft.fillRect(0, y, tft.width(), h, GC9A01A_BLACK); // Clear the area

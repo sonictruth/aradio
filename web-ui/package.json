@@ -4,6 +4,8 @@
   "version": "0.0.0",
   "source": "src/index.html",
   "scripts": {
+    "predeploy": "rm -rf dist",
+    "prestart": "rm -rf dist",
     "deploy": "npm run build && gh-pages -d dist",
     "start": "parcel",
     "build": "parcel build  --public-url /aradio/  --no-content-hash --no-source-maps src/index.html "

@@ -6,7 +6,7 @@
 #include "webroutes.h"
 #include "epromAddreses.h"
 
-#include "display_gc9a01a.h"
+#include "display_serial.h"
 #include "audio_es8311.h"
 
 // #include "display_sdd1306.h"
@@ -29,8 +29,6 @@ char stationTitle[256] = "";
 char lastStreamURL[256] = "";
 
 char localWebUIURL[200] = "";
-
-
 
 void setupWifi()
 {
@@ -57,12 +55,12 @@ void setupWifi()
 
   String hostName = WiFi.localIP().toString();
 
-#if ENABLE_MDNS
   if (MDNS.begin(deviceName.c_str()))
   {
+#if ENABLE_MDNS
     hostName = deviceName + ".local";
-  }
 #endif
+  }
 
   snprintf(localWebUIURL, sizeof(localWebUIURL), "http://%s", hostName.c_str());
 }
