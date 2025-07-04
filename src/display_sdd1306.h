@@ -73,14 +73,12 @@ void setStatus(const String &status, bool isTop = true)
   size_t bufSize = isTop ? sizeof(topStatus) : sizeof(bottomStatus);
 
   if (isTop) {
-    snprintf(targetStatus, bufSize, "%s Connect @ %s", status, localWebUIURL);
+    snprintf(targetStatus, bufSize, "%s - %s ", localWebUIURL,  status );
   } else {
 
     strncpy(targetStatus, status.c_str(), bufSize - 1);
     targetStatus[bufSize - 1] = '\0'; 
   }
-
-
 
   display.setTextWrap(false);
 
