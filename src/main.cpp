@@ -8,11 +8,11 @@
 
 // #include "display_serial.h"
 
-#include "display_gc9a01a.h"
-#include "audio_es8311.h"
+// #include "display_gc9a01a.h"
+//#include "audio_es8311.h"
 
-// #include "display_sdd1306.h"
-// #include "audio_pcm5102.h"
+#include "display_sdd1306.h"
+#include "audio_pcm5102.h"
 
 
 #define ENABLE_MDNS 0

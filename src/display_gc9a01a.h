@@ -1,6 +1,7 @@
 #pragma once
 
 #include "SPI.h"
+#include "Audio.h"
 #include <Arduino_GFX_Library.h>
 
 #define TFT_DC 47

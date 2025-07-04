@@ -21,14 +21,14 @@ int bottomStatusTextX = 0;
 int topScrollSpeed = 20;
 int bottomScrollSpeed = 20;
 
-extern char topStatus[256] = "";
-extern char bottomStatus[256] = "";
+extern char topStatus[256];
+extern char bottomStatus[256];
 
-extern char stationName[256] = "";
-extern char stationTitle[256] = "";
-extern char lastStreamURL[256] = "";
+extern char stationName[256];
+extern char stationTitle[256];
+extern char lastStreamURL[256];
 
-extern char localWebUIURL[200] = "";
+extern char localWebUIURL[200];
 
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 
