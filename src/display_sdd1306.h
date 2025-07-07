@@ -32,7 +32,6 @@ extern char localWebUIURL[200];
 
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 
-
 void setupDisplay()
 {
   Wire.begin(I2C_SDA, I2C_SCL);
@@ -72,12 +71,15 @@ void setStatus(const String &status, bool isTop = true)
   char *targetStatus = isTop ? topStatus : bottomStatus;
   size_t bufSize = isTop ? sizeof(topStatus) : sizeof(bottomStatus);
 
-  if (isTop) {
-    snprintf(targetStatus, bufSize, "%s - %s ", localWebUIURL,  status );
-  } else {
+  if (isTop)
+  {
+    snprintf(targetStatus, bufSize, "%s - %s ", localWebUIURL, status);
+  }
+  else
+  {
 
     strncpy(targetStatus, status.c_str(), bufSize - 1);
-    targetStatus[bufSize - 1] = '\0'; 
+    targetStatus[bufSize - 1] = '\0';
   }
 
   display.setTextWrap(false);
@@ -117,6 +119,9 @@ void displayLoop()
   display.setTextSize(2);
   display.setCursor(bottomStatusTextX, 17);
   display.print(bottomStatus);
+
+  uint16_t vuLine = map(audio.getVUlevel(), 0, 40000, 0, display.height());
+  display.drawFastVLine(SCREEN_WIDTH - 2, SCREEN_HEIGHT - vuLine, vuLine, SSD1306_WHITE);
 
   display.display();
 
